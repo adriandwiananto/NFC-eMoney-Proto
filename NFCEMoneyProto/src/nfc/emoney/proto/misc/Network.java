@@ -1,4 +1,4 @@
-package nfc.emoney.proto.net;
+package nfc.emoney.proto.misc;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -8,7 +8,6 @@ import java.util.List;
 
 import nfc.emoney.proto.Login;
 import nfc.emoney.proto.R;
-import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
 
 import org.apache.http.HttpResponse;
@@ -33,7 +32,7 @@ import android.widget.Toast;
 
 public class Network extends AsyncTask<Void, Void, JSONObject> {
 
-	private final static String TAG = "Network.AsyncTask";
+	private final static String TAG = "[class]Network";
 	private String hostname;
 	private String data,header,logs;
 	private String param_mode;

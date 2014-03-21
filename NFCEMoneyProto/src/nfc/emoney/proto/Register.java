@@ -3,7 +3,7 @@ package nfc.emoney.proto;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import nfc.emoney.proto.net.Network;
+import nfc.emoney.proto.misc.Network;
 import nfc.emoney.proto.userdata.AppData;
 import android.app.Activity;
 import android.os.Bundle;
@@ -28,6 +28,7 @@ public class Register extends Activity implements OnClickListener {
 		
 //		appdata = new AppData(getApplicationContext());
 		appdata = new AppData(this);
+		appdata.setIMEI();
 		
 		spinner = (ProgressBar)findViewById(R.id.pReg);
 		spinner.setVisibility(View.GONE);

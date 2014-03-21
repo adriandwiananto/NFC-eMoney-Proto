@@ -1,5 +1,9 @@
 package nfc.emoney.proto;
 
+import java.sql.Date;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
+
 import nfc.emoney.proto.userdata.AppData;
 import android.app.Activity;
 import android.os.Bundle;
@@ -19,12 +23,16 @@ public class Login extends Activity implements OnClickListener {
 		
 		appdata = new AppData(this);
 		
+		Date d = new Date(appdata.getLATS()*1000);
+		SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US);
+		
 		loginDebug = (TextView)findViewById(R.id.tLoginDebug);
-		loginDebug.setText("ACCN:"+String.valueOf(appdata.getACCN()));
-//		loginDebug.setText("\nHWID:"+String.valueOf(appdata.getIMEI()));
-//		loginDebug.setText("\nPassword:"+appdata.getPass());
-//		loginDebug.setText("\nBalance:"+String.valueOf(appdata.getBalance()));
-//		loginDebug.setText("\nLast Sync:"+String.valueOf(appdata.getIMEI()));
+		loginDebug.setText("ACCN : "+String.valueOf(appdata.getACCN()));
+		loginDebug.append("\nHWID : "+String.valueOf(appdata.getIMEI()));
+		loginDebug.append("\nPassword : "+appdata.getPass());
+		loginDebug.append("\nBalance : "+String.valueOf(appdata.getBalance()));
+		loginDebug.append("\nLast Sync : "+String.valueOf(appdata.getLATS()));
+		loginDebug.append("\nLast Sync(Readable) : "+ df.format(d));
 		
 		((Button)findViewById(R.id.bLoginProceed)).setOnClickListener(this);
 		((Button)findViewById(R.id.bLoginCancel)).setOnClickListener(this);
