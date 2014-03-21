@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">NFC eMoney Proto</string>
+    <string name="action_settings">Settings</string>
+    <string name="nfc_disabled">NFC disabled. Would you like to enable?</string>
+    <string name="tSaldo">BU</string>
+    <string name="bPay">Pay</string>
+    <string name="bHistory">History</string>
+    <string name="bSync">Sync</string>
+    <string name="bOption">Option</string>
+    <string name="bPaySend">Send</string>
+    <string name="bPayCancel">Cancel</string>
+    <string name="tPaySESN">Security Number\t\t\t:</string>
+    <string name="tPayAmount">Amount\t\t\t\t\t\t\t:</string>
+    <string name="tOptionOldPass">Old Password\t\t\t\t:</string>
+    <string name="tOptionNewPass">New Password\t\t\t:</string>
+    <string name="tOptionConfPass">Confirm Password\t\t:</string>
+    <string name="bOptionProceed">Proceed</string>
+    <string name="bOptionCancel">Cancel</string>
+    <string name="tRegACCN">Account ID :</string>
+    <string name="tRegNewPass">New Password :</string>
+    <string name="tRegConfPass">Confirm Password :</string>
+    <string name="bRegConfirm">Confirm</string>
+    <string name="bRegCancel">Cancel</string>
+    <string name="tLoginPassword">Password :</string>
+    <string name="bLoginProceed">Proceed</string>
+    <string name="bLoginCancel">Cancel</string>
+
+</resources>
