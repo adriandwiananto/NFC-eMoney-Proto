@@ -7,6 +7,7 @@ import nfc.emoney.proto.misc.Network;
 import nfc.emoney.proto.userdata.AppData;
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -16,6 +17,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 public class Register extends Activity implements OnClickListener {
+	private final static String TAG = "{class} Register";
 	private AppData appdata;
 	private String ACCN, NewPass, ConfPass;
 	private static final String HOSTNAME = "http://emoney-server.herokuapp.com/register.json";
@@ -43,6 +45,8 @@ public class Register extends Activity implements OnClickListener {
 		switch(v.getId()){
 			case R.id.bRegConfirm:
 				spinner.setVisibility(View.VISIBLE);
+				Log.d(TAG,"Starts register");
+				
 				((Button)findViewById(R.id.bRegConfirm)).setEnabled(false);
 				((Button)findViewById(R.id.bRegCancel)).setEnabled(false);
 				ACCN = ((EditText)findViewById(R.id.eRegACCN)).getText().toString();
@@ -78,14 +82,10 @@ public class Register extends Activity implements OnClickListener {
 					e.printStackTrace();
 				}
 				
-				Network net = new Network(Register.this ,getApplicationContext(),HOSTNAME, "REG", json);
+				Log.d(TAG,"Create asynctask");
+				Network net = new Network(Register.this ,getApplicationContext(), HOSTNAME, json, NewPass, ACCN);
 				net.execute();
-				
-				appdata.setACCN(Long.parseLong(ACCN));
-				appdata.setPass(NewPass);
-				appdata.setLATS(System.currentTimeMillis() / 1000);
-				appdata.deriveKey(NewPass);
-				appdata.setBalance(0);
+				Log.d(TAG,"Finish main thread");
 				break;
 			case R.id.bRegCancel:
 				finish();

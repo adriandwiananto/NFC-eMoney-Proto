@@ -32,28 +32,38 @@ import android.widget.Toast;
 
 public class Network extends AsyncTask<Void, Void, JSONObject> {
 
-	private final static String TAG = "[class]Network";
+	private final static String TAG = "{class} Network";
+	private final static int REGISTRATION_MODE = 99;
+	private final static int LOG_SYNC_MODE = 49;
+	
 	private String hostname;
 	private String data,header,logs;
-	private String param_mode;
+	private String newPassword, newACCN;
+	
 	private JSONObject jobj_response;
+	
+	private int param_mode;
 	private int error;
+	
 	private Context ctx;
 	private AppData appdata;
 	private Activity parentActivity;
 	
-	public Network(Activity parent, Context context, String host, String mode, JSONObject jobj){
+	public Network(Activity parent, Context context, String host, JSONObject jobj, String NewPass, String ACCNtoSend){
 		ctx = context;
 		parentActivity = parent;
 		hostname = host;
-		param_mode = mode;
-		appdata = new AppData(ctx);
+		newPassword = NewPass;
+		newACCN = ACCNtoSend;
 		error = 0;
 		
-		if(param_mode.compareTo("REG") == 0){
+		param_mode = REGISTRATION_MODE;
+		appdata = new AppData(ctx);
+		
+		if(param_mode == REGISTRATION_MODE){
 			data = jobj.toString();
 		}
-		else if(param_mode.compareTo("LOG") == 0){
+		else if(param_mode == LOG_SYNC_MODE){
 			JSONObject jheader;
 			JSONObject jlogs;
 			
@@ -83,18 +93,18 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 
 			// Add your data
 			List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-			if(param_mode.compareTo("LOG") == 0){
+			if(param_mode == LOG_SYNC_MODE){
 				nameValuePairs.add(new BasicNameValuePair("header", header));
 				nameValuePairs.add(new BasicNameValuePair("logs", logs));
 			}
-			else if(param_mode.compareTo("REG") == 0){
+			else if(param_mode == REGISTRATION_MODE){
 				nameValuePairs.add(new BasicNameValuePair("data", data));
 			}
 			else{
 				return null;
 			}
 			httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-			Log.d(TAG,"POST:"+httppost.toString());
+
 			// Execute HTTP Post Request
 			HttpResponse response = httpclient.execute(httppost);
 
@@ -122,7 +132,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			// do something
 			jobj_response = result;
 //			Toast.makeText(ctx, "Response:"+jobj_response.toString(), Toast.LENGTH_LONG).show();
-			if(param_mode.compareTo("REG") == 0){
+			if(param_mode == REGISTRATION_MODE){
 				String responseStatus;
 				try {
 					responseStatus = jobj_response.getString("result");
@@ -137,7 +147,16 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 						byte[] aesKey = new byte[responseKey.length()/2];
 						aesKey = Converter.hexStringToByteArray(responseKey.toString());
 						Log.d(TAG,"aesKey byte array:"+Arrays.toString(aesKey));
-						appdata.setKey(aesKey);
+						
+						Log.d(TAG,"Start writing shared pref");
+						appdata.setACCN(Long.parseLong(newACCN));
+						appdata.setPass(newPassword);
+						appdata.deriveKey(newPassword);
+						appdata.setKey(aesKey);						
+						appdata.setLATS(System.currentTimeMillis() / 1000);
+						appdata.setBalance(100000);
+						Log.d(TAG,"Finish writing shared pref");
+						
 						Toast.makeText(ctx, "Registration Success", Toast.LENGTH_LONG).show();
 						
 						((ProgressBar)parentActivity.findViewById(R.id.pReg)).setVisibility(View.INVISIBLE);
@@ -150,7 +169,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 					appdata.deleteAppData();
 				}
 			}
-			else if(param_mode.compareTo("LOG") == 0){
+			else if(param_mode == LOG_SYNC_MODE){
 				
 			}
 			else{

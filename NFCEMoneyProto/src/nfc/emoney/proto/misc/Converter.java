@@ -21,4 +21,8 @@ public class Converter {
 	public static byte[] integerToByteArray(int dataInt){
 		return ByteBuffer.allocate(4).putInt(dataInt).array();
 	}
+
+	public static int byteArrayToInteger(byte[] dataByte){
+		return ByteBuffer.wrap(dataByte).getInt();
+	}
 }
