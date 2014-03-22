@@ -67,10 +67,8 @@ public class Register extends Activity implements OnClickListener {
 				
 				JSONObject json = new JSONObject();
 				try {
-//					json.put("HWID", appdata.getIMEI());
-//					json.put("ACCN", ACCN);
-					json.put("HWID", 36679410);
-					json.put("ACCN", "331921777925");
+					json.put("HWID", appdata.getIMEI());
+					json.put("ACCN", ACCN);
 					((TextView)findViewById(R.id.tRegDebug)).setText("JSON send:"+json.toString());
 				} catch (NumberFormatException e) {
 					// TODO Auto-generated catch block
@@ -86,6 +84,7 @@ public class Register extends Activity implements OnClickListener {
 				appdata.setACCN(Long.parseLong(ACCN));
 				appdata.setPass(NewPass);
 				appdata.setLATS(System.currentTimeMillis() / 1000);
+				appdata.deriveKey(NewPass);
 				appdata.setBalance(0);
 				break;
 			case R.id.bRegCancel:

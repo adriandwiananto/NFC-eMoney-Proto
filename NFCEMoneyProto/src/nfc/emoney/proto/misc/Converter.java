@@ -1,6 +1,7 @@
 package nfc.emoney.proto.misc;
 
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 
 public class Converter {
 	public static byte[] hexStringToByteArray(String dataString) {
@@ -15,5 +16,9 @@ public class Converter {
 
 	public static String byteArrayToHexString(byte[] dataByte) {
 		return String.format("%0" + (dataByte.length*2) + "X", new BigInteger(1, dataByte));
+	}
+	
+	public static byte[] integerToByteArray(int dataInt){
+		return ByteBuffer.allocate(4).putInt(dataInt).array();
 	}
 }

@@ -1,6 +1,18 @@
 package nfc.emoney.proto.userdata;
 
+import java.io.UnsupportedEncodingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+
+import nfc.emoney.proto.crypto.AES256cipher;
 import nfc.emoney.proto.crypto.Hash;
+import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.misc.Converter;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -14,21 +26,34 @@ public class AppData {
 	private SharedPreferences Pref;
 	private Context ctx;
 	private String IMEI;
-	private Byte[] aes_key;
+	private byte[] aes_key, balance_key, log_key, trans_key;
 	private long lIMEI;
 	
 	public AppData(Context context) {
 		// TODO Auto-generated constructor stub
 		ctx = context;
 		Pref = PreferenceManager.getDefaultSharedPreferences(ctx);
-		
-		if(this.getACCN() != 0){
-			if(this.getIMEI() != 0){
-				//new class that responsible for key derivation and key store in session
-			}
-		}
 	}
 
+	public boolean deriveKey(String password){
+		if(this.getPass().isEmpty()){
+			return false;
+		}
+		String hashed = Converter.byteArrayToHexString(Hash.Sha256Hash(password.concat(String.valueOf(this.getIMEI()))));
+		if(hashed.compareTo(this.getPass()) != 0){
+			return false;
+		}
+		
+		String salt = String.valueOf(this.getIMEI());
+		KeyDerive key = new KeyDerive();
+		Log.d(TAG,"Start deriving key");
+		balance_key = key.Pbkdf2Derive(password, salt, 8000);
+		log_key = key.Pbkdf2Derive(password, salt, 9000);
+		trans_key = key.Pbkdf2Derive(password, salt, 10000);
+		Log.d(TAG,"Finish deriving key. Check the time!");
+		return true;
+	}
+	
 	public void setACCN(long lACCN) {
 		// TODO Auto-generated method stub
 		Editor edit = Pref.edit();
@@ -86,6 +111,22 @@ public class AppData {
 		//derive key
 		//encrypt balance
 		//commit ke sharedpref
+		String encBal;
+		byte[] encBalArray = new byte[48];
+		byte[] iv = new byte[16];
+		SecureRandom random = new SecureRandom();		
+		random.nextBytes(iv);
+		try {
+			encBalArray = AES256cipher.encrypt(iv, balance_key, Converter.integerToByteArray(Bal));
+			System.arraycopy(iv, 0, encBalArray, 32, 16);
+			encBal = Converter.byteArrayToHexString(encBalArray);
+			Editor edit = Pref.edit();
+			edit.putString("Balance", encBal);
+			edit.commit();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public int getBalance(){
@@ -94,6 +135,8 @@ public class AppData {
 		//derive key
 		//decrypt balance
 		//return balance
+		String encBal = Pref.getString("Balance", null);
+		byte[] iv = new byte[16];
 		return 0;
 	}
 	
@@ -108,6 +151,7 @@ public class AppData {
 		// derive key
 		// encrypt key
 		// commit to pref
+		
 	}
 	
 //	public byte[] getKey(){
