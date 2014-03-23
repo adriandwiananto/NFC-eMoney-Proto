@@ -1,25 +1,64 @@
 package nfc.emoney.proto;
 
+import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAdapter.OnNdefPushCompleteCallback;
 import android.nfc.NfcEvent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.provider.Settings;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements OnClickListener, OnNdefPushCompleteCallback{
 
+	private final static String TAG = "{class} MainActivity";
 	private NfcAdapter nfcA;
 	private AppData appdata;
+	TextView balance,debug;
+	ProgressBar balanceLoading;
+	Button bPay,bHistory,bSync,bOption;
+	private String password;
+	private long lIMEI;
+	private String aesKeyString;
 	
+	@SuppressLint("HandlerLeak")
+	Handler handler = new Handler() {
+		@Override
+		public void handleMessage(Message msg) {
+			Bundle bundle = msg.getData();
+			String stringFromMsg = bundle.getString("Balance");
+			aesKeyString = Converter.byteArrayToHexString(bundle.getByteArray("aesKeyByte"));
+			//UI modification
+			balance.setText(stringFromMsg);
+			balanceLoading.setVisibility(View.GONE);
+			balance.setVisibility(View.VISIBLE);
+			bPay.setEnabled(true);
+			bHistory.setEnabled(true);
+			bSync.setEnabled(true);
+			bOption.setEnabled(true);
+			
+			debug.setText("KEK:\n"+Converter.byteArrayToHexString(appdata.getKeyEncryptionKey()));
+			debug.append("\nBalance Key:\n"+Converter.byteArrayToHexString(appdata.getBalanceKey()));
+			debug.append("\nLog Key:\n"+Converter.byteArrayToHexString(appdata.getLogKey()));
+			debug.append("\nTransaction Key:\n"+Converter.byteArrayToHexString(appdata.getDecryptedKey()));
+		}
+	};
+		 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -33,31 +72,75 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
         	finish();
         }
     	
+    	//UI Initialization
+    	balance = (TextView)findViewById(R.id.tMainBalanceUnverified);
+    	debug = (TextView)findViewById(R.id.tMainDebug);
+    	balanceLoading = (ProgressBar)findViewById(R.id.pMain);
+        bPay = (Button) findViewById(R.id.bPay);
+        bPay.setOnClickListener(this);
+        bPay.setEnabled(false);
+        bHistory = (Button) findViewById(R.id.bHistory);
+        bHistory.setOnClickListener(this);
+        bHistory.setEnabled(false);
+        bSync = (Button) findViewById(R.id.bSync);
+        bSync.setOnClickListener(this);
+        bSync.setEnabled(false);
+        bOption = (Button) findViewById(R.id.bOption);
+        bOption.setOnClickListener(this);
+        bOption.setEnabled(false);
+        
+    	TelephonyManager T = (TelephonyManager)getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
+		String IMEI = T.getDeviceId();
+		lIMEI = Long.parseLong(IMEI);
+		
     	//disable android beam
         nfcA.setNdefPushMessage(null, this);
         //set callback to onNdefPushComplete in this class
         nfcA.setOnNdefPushCompleteCallback(this, this);
         
-        // Preferences
-//        SharedPreferences Pref = PreferenceManager.getDefaultSharedPreferences(this);
-        
         appdata = new AppData(getApplicationContext());
+        Log.d(TAG,"create new AppData class successfully");
+        
         if(appdata.getACCN() == 0){
         	startActivity(new Intent(this, Register.class)); 
         	finish();
         }
         else{
-        	startActivity(new Intent(this, Login.class));
-        	finish();
-        }
-        
-        //Set Listener
-        ((Button) findViewById(R.id.bPay)).setOnClickListener(this);
-        ((Button) findViewById(R.id.bHistory)).setOnClickListener(this);
-        ((Button) findViewById(R.id.bSync)).setOnClickListener(this);
-        ((Button) findViewById(R.id.bOption)).setOnClickListener(this);
-	}
+        	
+        	if(appdata.getIMEI() != lIMEI){
+        		Toast.makeText(getApplicationContext(), "Registered device not same with current device", Toast.LENGTH_LONG).show();
+        		finish();
+        	}
 
+        	Intent myIntent = getIntent();
+        	
+        	if(myIntent.getStringExtra("Password") == null){
+        		startActivity(new Intent(this, Login.class));
+        		finish();
+        	}else{
+	        	password = myIntent.getStringExtra("Password");
+	        	Log.d(TAG,"Password:"+password);
+	        	
+	        	Runnable runnable = new Runnable(){
+	        		public void run(){
+	        			Message msg = handler.obtainMessage();
+	        			appdata.deriveKey(password, String.valueOf(lIMEI));
+	        			int decryptedBalance = appdata.getDecryptedBalance();
+	        			byte[] aesKey = appdata.getDecryptedKey();
+	        			Bundle bundle = new Bundle();
+	        			bundle.putString("Balance", String.valueOf(decryptedBalance));
+	        			bundle.putByteArray("aesKeyByte", aesKey);
+	        			msg.setData(bundle);
+	        			handler.sendMessage(msg);
+	        		}
+	        	};
+	        	
+	        	Thread balanceThread = new Thread(runnable);
+	        	balanceThread.start();
+        	}
+        }
+	}
+	
 	@Override
     protected void onResume() {
         super.onResume();
@@ -73,17 +156,24 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 		// TODO Auto-generated method stub
 		switch (v.getId()){
 			case R.id.bPay:
-				startActivity(new Intent(this, Pay.class));
+				Intent payIntent = new Intent(this, Pay.class);
+				payIntent.putExtra("Password", password);
+				payIntent.putExtra("aesKey", aesKeyString);
+				startActivity(payIntent);
 				break;
 			case R.id.bHistory:
-				startActivity(new Intent(this, History.class));
+				Intent historyIntent = new Intent(this, History.class);
+				historyIntent.putExtra("Password", password);
+				startActivity(historyIntent);
 				break;
 			case R.id.bSync:
 				//new thread
 				//http post
 				break;
 			case R.id.bOption:
-				startActivity(new Intent(this, Option.class));
+				Intent optionIntent = new Intent(this, Option.class);
+				optionIntent.putExtra("Password", password);
+				startActivity(optionIntent);
 				break;
 		}
 	}

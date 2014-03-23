@@ -38,7 +38,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	
 	private String hostname;
 	private String data,header,logs;
-	private String newPassword, newACCN;
+	private String newPassword, newACCN, newIMEI;
 	
 	private JSONObject jobj_response;
 	
@@ -49,12 +49,13 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	private AppData appdata;
 	private Activity parentActivity;
 	
-	public Network(Activity parent, Context context, String host, JSONObject jobj, String NewPass, String ACCNtoSend){
+	public Network(Activity parent, Context context, String host, JSONObject jobj, String NewPass, String ACCNtoSend, String HWID){
 		ctx = context;
 		parentActivity = parent;
 		hostname = host;
 		newPassword = NewPass;
 		newACCN = ACCNtoSend;
+		newIMEI = HWID;
 		error = 0;
 		
 		param_mode = REGISTRATION_MODE;
@@ -63,6 +64,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 		if(param_mode == REGISTRATION_MODE){
 			data = jobj.toString();
 		}
+		
 		else if(param_mode == LOG_SYNC_MODE){
 			JSONObject jheader;
 			JSONObject jlogs;
@@ -151,7 +153,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 						Log.d(TAG,"Start writing shared pref");
 						appdata.setACCN(Long.parseLong(newACCN));
 						appdata.setPass(newPassword);
-						appdata.deriveKey(newPassword);
+						appdata.deriveKey(newPassword, newIMEI);
 						appdata.setKey(aesKey);						
 						appdata.setLATS(System.currentTimeMillis() / 1000);
 						appdata.setBalance(100000);

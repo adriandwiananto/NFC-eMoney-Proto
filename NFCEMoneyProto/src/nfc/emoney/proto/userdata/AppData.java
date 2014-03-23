@@ -1,15 +1,6 @@
 package nfc.emoney.proto.userdata;
 
-import java.io.UnsupportedEncodingException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.Arrays;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 
 import nfc.emoney.proto.crypto.AES256cipher;
 import nfc.emoney.proto.crypto.Hash;
@@ -27,7 +18,7 @@ public class AppData {
 	private SharedPreferences Pref;
 	private Context ctx;
 	private String IMEI;
-	private byte[] aes_key, balance_key, log_key, trans_key;
+	private byte[] balance_key, log_key, keyEncryption_key;
 	private long lIMEI;
 	
 	public AppData(Context context) {
@@ -36,16 +27,8 @@ public class AppData {
 		Pref = PreferenceManager.getDefaultSharedPreferences(ctx);
 	}
 
-	public boolean deriveKey(String password){
-		if(this.getPass().isEmpty()){
-			return false;
-		}
-		String hashed = Converter.byteArrayToHexString(Hash.Sha256Hash(password.concat(String.valueOf(this.getIMEI()))));
-		if(hashed.compareTo(this.getPass()) != 0){
-			return false;
-		}
-		
-		String salt = String.valueOf(this.getIMEI());
+	public boolean deriveKey(String password, String IMEI){
+		String salt = IMEI;
 		KeyDerive key = new KeyDerive();
 		Log.d(TAG,"Start deriving key");
 		balance_key = key.Pbkdf2Derive(password, salt, 800);
@@ -54,8 +37,8 @@ public class AppData {
 		log_key = key.Pbkdf2Derive(password, salt, 900);
 		Log.d(TAG,"logkey:"+Converter.byteArrayToHexString(log_key));
 		
-		trans_key = key.Pbkdf2Derive(password, salt, 1000);
-		Log.d(TAG,"transkey:"+Converter.byteArrayToHexString(trans_key));
+		keyEncryption_key = key.Pbkdf2Derive(password, salt, 1000);
+		Log.d(TAG,"transkey:"+Converter.byteArrayToHexString(keyEncryption_key));
 		Log.d(TAG,"Finish deriving key. Check the time!");
 		return true;
 	}
@@ -97,7 +80,7 @@ public class AppData {
 	}
 	
 	public String getPass(){
-		return Pref.getString("Pass", null);
+		return Pref.getString("Pass", "");
 	}
 
 	public void setLATS(long LATS) {
@@ -142,7 +125,7 @@ public class AppData {
 	}
 	
 	public String getBalance(){
-		return Pref.getString("Balance", null);
+		return Pref.getString("Balance", "");
 	}
 	
 	public int getDecryptedBalance(){
@@ -151,7 +134,7 @@ public class AppData {
 		//derive key
 		//decrypt balance
 		//return balance
-		String ciphertext = Pref.getString("Balance", null);
+		String ciphertext = Pref.getString("Balance", "");
 		if(ciphertext.isEmpty()) {
 			Log.d(TAG,"Encrypted balance from shared preferences is empty");
 			return -1;
@@ -204,11 +187,79 @@ public class AppData {
 		// encrypt key
 		// commit to pref
 		
+		Editor edit = Pref.edit();
+		
+		if(this.getIMEI() == 0){
+			edit.putString("AESKEY", "FAIL! NO IMEI");
+			edit.commit();
+			return;
+		}
+		
+		if(this.getPass().length() == 0){
+			edit.putString("AESKEY", "FAIL! NO Password");
+			edit.commit();
+			return; 
+		}
+		
+		if(keyEncryption_key.length == 32){
+			SecureRandom random = new SecureRandom();
+			byte[] iv = new byte[16];
+			random.nextBytes(iv);
+			
+			try {
+				byte[] wrappedKey = AES256cipher.wrapAES(keyEncryption_key, aesKey, iv);
+				byte[] wrappedKeyIv = new byte[wrappedKey.length+iv.length];
+				System.arraycopy(wrappedKey, 0, wrappedKeyIv, 0, wrappedKey.length);
+				System.arraycopy(iv, 0, wrappedKeyIv, wrappedKeyIv.length - iv.length, iv.length);
+				
+				edit.putString("AESKEY", Converter.byteArrayToHexString(wrappedKeyIv));
+				edit.commit();
+				return;
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			edit.putString("AESKEY", "FAIL! WTF! UNCAUGHT EXCEPTION!");
+			edit.commit();
+		}
 	}
 	
-//	public byte[] getKey(){
-		//derive key
-		//get key from pref
-		//return decrypted
-//	}
+	public String getEncryptedKey(){
+		return Pref.getString("AESKEY", "");
+	}
+	
+	public byte[] getDecryptedKey(){
+		String wrappedAll = Pref.getString("AESKEY", "");
+		byte[] wrappedAllArr = Converter.hexStringToByteArray(wrappedAll);
+		Log.d(TAG,"aeskey from sharedpref:"+wrappedAll);
+		
+		byte[] wrappedKey = new byte[wrappedAllArr.length - 16];
+		System.arraycopy(wrappedAllArr, 0, wrappedKey, 0, wrappedAllArr.length-16);
+		
+		byte[] iv = new byte[16];
+		System.arraycopy(wrappedAllArr, wrappedAllArr.length-16, iv, 0, 16);
+		
+		byte[] plainKey = new byte[32];
+		
+		try {
+			plainKey = AES256cipher.unwrapAES(keyEncryption_key, wrappedKey, iv);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return plainKey;
+	}
+	
+	public byte[] getBalanceKey(){
+		return balance_key;
+	}
+
+	public byte[] getLogKey(){
+		return log_key;
+	}
+	
+	public byte[] getKeyEncryptionKey(){
+		return keyEncryption_key;
+	}
 }

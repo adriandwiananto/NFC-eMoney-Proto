@@ -6,10 +6,12 @@ import org.json.JSONObject;
 import nfc.emoney.proto.misc.Network;
 import nfc.emoney.proto.userdata.AppData;
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -28,7 +30,6 @@ public class Register extends Activity implements OnClickListener {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.register);
 		
-//		appdata = new AppData(getApplicationContext());
 		appdata = new AppData(this);
 		appdata.setIMEI();
 		
@@ -46,6 +47,9 @@ public class Register extends Activity implements OnClickListener {
 			case R.id.bRegConfirm:
 				spinner.setVisibility(View.VISIBLE);
 				Log.d(TAG,"Starts register");
+				
+				InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
+				inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
 				
 				((Button)findViewById(R.id.bRegConfirm)).setEnabled(false);
 				((Button)findViewById(R.id.bRegCancel)).setEnabled(false);
@@ -83,7 +87,8 @@ public class Register extends Activity implements OnClickListener {
 				}
 				
 				Log.d(TAG,"Create asynctask");
-				Network net = new Network(Register.this ,getApplicationContext(), HOSTNAME, json, NewPass, ACCN);
+				String IMEI = String.valueOf(appdata.getIMEI());
+				Network net = new Network(Register.this ,getApplicationContext(), HOSTNAME, json, NewPass, ACCN, IMEI);
 				net.execute();
 				Log.d(TAG,"Finish main thread");
 				break;
