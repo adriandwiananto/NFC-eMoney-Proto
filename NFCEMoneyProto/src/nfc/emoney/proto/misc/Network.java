@@ -136,7 +136,6 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 		if (result.length() != 0) {
 			// do something
 			jobj_response = result;
-//			Toast.makeText(ctx, "Response:"+jobj_response.toString(), Toast.LENGTH_LONG).show();
 			if(param_mode == REGISTRATION_MODE){
 				String responseStatus;
 				try {
@@ -160,6 +159,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 						appdata.setKey(aesKey, key.getKeyEncryptionKey());						
 						appdata.setLATS(System.currentTimeMillis() / 1000);
 						appdata.setBalance(100000, key.getBalanceKey());
+						appdata.setVerifiedBalance(100000, key.getBalanceKey());
 						Log.d(TAG,"Finish writing shared pref");
 						
 						Toast.makeText(ctx, "Registration Success", Toast.LENGTH_LONG).show();

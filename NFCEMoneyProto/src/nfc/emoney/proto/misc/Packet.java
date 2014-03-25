@@ -16,11 +16,11 @@ public class Packet {
 	private int SESN;
 	private long ACCN;
 	private long LATS;
-	private String aesKey;
+	private byte[] aesKey;
 	private byte[] plainPacket;
 	private byte[] cipherPacket;
 	
-	public Packet(int amount, int sesn, long accn, long lastTS, String aes_key) {
+	public Packet(int amount, int sesn, long accn, long lastTS, byte[] aes_key) {
 		// TODO Auto-generated constructor stub
 		Amount = amount;
 		SESN = sesn;
@@ -49,7 +49,6 @@ public class Packet {
 		trans[6] = 0; //EH
 		System.arraycopy(ByteBuffer.allocate(8).putLong(longACCN).array(),2, trans, 7, 6); //ACCN(6)
 		System.arraycopy(ByteBuffer.allocate(8).putLong(System.currentTimeMillis()/1000).array(),4, trans, 13, 4); //TS(4)
-//		System.arraycopy(ByteBuffer.allocate(8).putLong(lLATS+(24*60*60)).array(),4, trans, 13, 4); //TS(4)
 		System.arraycopy(ByteBuffer.allocate(4).putInt(intAmount).array(), 0, trans, 17, 4); //Amount(4)
 		System.arraycopy(ByteBuffer.allocate(8).putLong(lLATS).array(),4, trans, 21, 4); //LATS(4)
 		System.arraycopy(ByteBuffer.allocate(4).putInt(intSESN).array(), 2, trans, 25, 2); //SESN(2)
@@ -61,7 +60,8 @@ public class Packet {
 		byte[] encAES = new byte[20];
 		System.arraycopy(trans, 7, encAES, 0, 20);
 		
-		byte[] keyAES = Converter.hexStringToByteArray(aesKey);
+//		byte[] keyAES = Converter.hexStringToByteArray(aesKey);
+		byte[] keyAES = aesKey;
 		
 		byte[] ciphertext = null;
 		try {
@@ -88,8 +88,6 @@ public class Packet {
 		}
 		
 		return transFinal;
-//		NdefMessage msg =  new NdefMessage(new NdefRecord[]{createNDEFRecord("data/trans", transFinal)});
-//		return msg;
 	}
 
 	public NdefMessage createNDEFMessage(String mime, byte[] payload) {
@@ -98,11 +96,6 @@ public class Packet {
 		NdefMessage msg = new NdefMessage(new NdefRecord[]{mrec});
 		return msg;
 	}
-//	private NdefRecord createNDEFRecord(String mime, byte[] payload) {
-//		byte[] mimeb = mime.getBytes(Charset.forName("US-ASCII"));
-//		NdefRecord mrec = new NdefRecord(NdefRecord.TNF_MIME_MEDIA, mimeb, new byte[0], payload);
-//		return mrec;
-//	}
 	
 	public byte[] getPlainPacket(){
 		return plainPacket;

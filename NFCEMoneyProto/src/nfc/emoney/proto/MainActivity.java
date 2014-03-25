@@ -35,8 +35,8 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 	Button bPay,bHistory,bSync,bOption;
 	private String password;
 	private long lIMEI;
-	private String aesKeyString;
 	private KeyDerive key;
+	private byte[] aes_key, log_key, balance_key;
 	
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
@@ -44,7 +44,6 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 		public void handleMessage(Message msg) {
 			Bundle bundle = msg.getData();
 			String stringFromMsg = bundle.getString("Balance");
-			aesKeyString = Converter.byteArrayToHexString(bundle.getByteArray("aesKeyByte"));
 			//UI modification
 			balance.setText(stringFromMsg);
 			balanceLoading.setVisibility(View.GONE);
@@ -130,10 +129,12 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 	        			Message msg = handler.obtainMessage();
 	        			key.deriveKey(password, String.valueOf(lIMEI));
 	        			int decryptedBalance = appdata.getDecryptedBalance(key.getBalanceKey());
-	        			byte[] aesKey = appdata.getDecryptedKey(key.getKeyEncryptionKey());
+	        			aes_key = appdata.getDecryptedKey(key.getKeyEncryptionKey());
+	        			log_key = key.getLogKey();
+	        			balance_key = key.getBalanceKey();
+	        			
 	        			Bundle bundle = new Bundle();
 	        			bundle.putString("Balance", String.valueOf(decryptedBalance));
-	        			bundle.putByteArray("aesKeyByte", aesKey);
 	        			msg.setData(bundle);
 	        			handler.sendMessage(msg);
 	        		}
@@ -162,7 +163,9 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 			case R.id.bPay:
 				Intent payIntent = new Intent(this, Pay.class);
 				payIntent.putExtra("Password", password);
-				payIntent.putExtra("aesKey", aesKeyString);
+				payIntent.putExtra("aesKey", aes_key);
+				payIntent.putExtra("logKey", log_key);
+				payIntent.putExtra("balanceKey", balance_key);
 				startActivity(payIntent);
 				break;
 			case R.id.bHistory:

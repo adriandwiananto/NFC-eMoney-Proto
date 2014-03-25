@@ -4,7 +4,6 @@ import java.security.SecureRandom;
 
 import nfc.emoney.proto.crypto.AES256cipher;
 import nfc.emoney.proto.crypto.Hash;
-import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.misc.Converter;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -118,6 +117,87 @@ public class AppData {
 		//decrypt balance
 		//return balance
 		String ciphertext = Pref.getString("Balance", "");
+		if(ciphertext.isEmpty()) {
+			Log.d(TAG,"Encrypted balance from shared preferences is empty");
+			return -1;
+		}
+		
+		byte[] ciphertextArray = Converter.hexStringToByteArray(ciphertext);
+		if(ciphertextArray.length != 32) {
+			Log.d(TAG,"Encrypted balance (in byte array) length is not 32");
+			return -2;
+		}
+		
+		if(balance_key.length != 32){
+			Log.d(TAG,"Balance key not yet derived!!");
+			return -3;
+		}
+		
+		byte[] iv = new byte[16];
+		System.arraycopy(ciphertextArray, 16, iv, 0, 16);
+		Log.d(TAG,"IV:"+Converter.byteArrayToHexString(iv));
+		
+		byte[] encryptedBalance = new byte[16];
+		System.arraycopy(ciphertextArray, 0, encryptedBalance, 0, 16);
+		Log.d(TAG,"encrypted balance:"+Converter.byteArrayToHexString(encryptedBalance));
+		Log.d(TAG,"balance key:"+Converter.byteArrayToHexString(balance_key));
+		
+		byte[] balance = new byte[16];
+		
+		try {
+			balance = AES256cipher.decrypt(iv, balance_key, encryptedBalance);
+			return Converter.byteArrayToInteger(balance);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			Log.e(TAG, e.toString());
+		}
+		
+		Log.d(TAG,"WTF! What a terrible failure! Uncaught exception.");
+		return -4;
+	}
+	
+	public void setVerifiedBalance(int Balance, byte[] balance_key) {
+		// TODO Auto-generated method stub
+		
+		//derive key
+		//encrypt balance
+		//commit ke sharedpref
+		String ciphertext;
+		byte[] encryptedBalanceArray = new byte[16];
+		byte[] iv = new byte[16];
+		byte[] balanceIv= new byte[32];
+		
+		SecureRandom random = new SecureRandom();		
+		random.nextBytes(iv);
+		
+		System.arraycopy(iv, 0, balanceIv, 16, 16);
+		
+		try {
+			encryptedBalanceArray = AES256cipher.encrypt(iv, balance_key, Converter.integerToByteArray(Balance));
+			System.arraycopy(encryptedBalanceArray, 0, balanceIv, 0, 16);
+			ciphertext = Converter.byteArrayToHexString(balanceIv);
+			Log.d(TAG,"Balance to write to shared preferences:"+ciphertext);
+			Editor edit = Pref.edit();
+			edit.putString("verifiedBalance", ciphertext);
+			edit.commit();
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	public String getVerifiedBalance(){
+		return Pref.getString("verifiedBalance", "");
+	}
+	
+	public int getDecryptedVerifiedBalance(byte[] balance_key){
+		
+		//ambil dari Pref
+		//derive key
+		//decrypt balance
+		//return balance
+		String ciphertext = Pref.getString("verifiedBalance", "");
 		if(ciphertext.isEmpty()) {
 			Log.d(TAG,"Encrypted balance from shared preferences is empty");
 			return -1;

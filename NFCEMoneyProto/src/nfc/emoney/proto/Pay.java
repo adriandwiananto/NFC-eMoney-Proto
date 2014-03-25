@@ -5,6 +5,7 @@ import java.io.IOException;
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.misc.Packet;
 import nfc.emoney.proto.userdata.AppData;
+import nfc.emoney.proto.userdata.LogDB;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -37,7 +38,10 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	Button bPay, bCancel;
 	EditText eSESN, eAmount;
 	TextView tDebug, tAmount, tSESN;
-	private String aesKey;
+	private byte[] aes_key, log_key, balance_key;
+	private byte[] plainTransPacket;
+	
+	private int amountInt;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +50,9 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 
 		appdata = new AppData(getApplicationContext());
 		Intent myIntent = getIntent();
-		aesKey = myIntent.getStringExtra("aesKey");
+		aes_key = myIntent.getByteArrayExtra("aesKey");
+		log_key = myIntent.getByteArrayExtra("logKey");
+		balance_key = myIntent.getByteArrayExtra("balanceKey");
 		
 		//UI Init
 		bPay = (Button) findViewById(R.id.bPaySend);
@@ -72,11 +78,22 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	        Tag detectedTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 	        if (writeTag(toSend, detectedTag)) {
 	        	Toast.makeText(getApplicationContext(), "Packet sent successfully", Toast.LENGTH_LONG).show();
+	        	
+	        	LogDB ldb = new LogDB(this, log_key);
+	        	ldb.insertLastTransToLog(plainTransPacket);
+	        	
+	        	int balanceBefore = appdata.getDecryptedBalance(balance_key);
+	        	int balanceNow = balanceBefore - amountInt;
+	        	appdata.setBalance(balanceNow, balance_key);
+	        	
 				bPay.setEnabled(true);
 				tAmount.setText(this.getString(R.string.tPayAmount));
 				tSESN.setText(this.getString(R.string.tPaySESN));
 				eAmount.setVisibility(View.VISIBLE);
 				eSESN.setVisibility(View.VISIBLE);
+				
+				Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
+				finish();
 	        } 
 	    }
     }
@@ -90,7 +107,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 					if(eSESN.getText().toString().length() == 3) {
 						String amount = eAmount.getText().toString();
 						String SESN = eSESN.getText().toString();
-						int amountInt = Integer.parseInt(amount);
+						amountInt = Integer.parseInt(amount);
 						int sesnInt = Integer.parseInt(SESN);
 						long accnLong = appdata.getACCN();
 						long lastTS = appdata.getLATS();
@@ -101,17 +118,19 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 						mNfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(Pay.this, Pay.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 						
-						Packet packet = new Packet(amountInt, sesnInt, accnLong, lastTS, aesKey);
+						Packet packet = new Packet(amountInt, sesnInt, accnLong, lastTS, aes_key);
 						byte[] packetArrayToSend = packet.buildTransPacket();
 						toSend = packet.createNDEFMessage("data/trans", packetArrayToSend);
 						
 						byte[] plainPayload = new byte[32];
 						System.arraycopy(packet.getPlainPacket(), 7, plainPayload, 0, 32);
 						
+						plainTransPacket = packet.getPlainPacket();
+						
 						tDebug.setText("Data packet to send:\n"+Converter.byteArrayToHexString(packetArrayToSend));
 						tDebug.append("\nPlain payload:\n"+Converter.byteArrayToHexString(plainPayload));
 						tDebug.append("\nCiphered payload:\n"+Converter.byteArrayToHexString(packet.getCipherPacket()));
-						tDebug.append("\naes key:\n"+aesKey);
+						tDebug.append("\naes key:\n"+Converter.byteArrayToHexString(aes_key));
 						tDebug.setVisibility(View.VISIBLE);
 						enableTagWriteMode();
 						
