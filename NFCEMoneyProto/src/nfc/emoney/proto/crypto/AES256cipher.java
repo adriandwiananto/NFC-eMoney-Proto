@@ -16,7 +16,6 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class AES256cipher {
 	
-	private final static String TAG = "{class} AES256cipher";
 	public static byte[] encrypt(byte[] ivBytes, byte[] keyBytes, byte[] textBytes) 
 			throws java.io.UnsupportedEncodingException, 
 				NoSuchAlgorithmException,

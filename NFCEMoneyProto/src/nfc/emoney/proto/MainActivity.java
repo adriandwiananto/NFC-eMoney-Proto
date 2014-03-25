@@ -171,6 +171,9 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 			case R.id.bHistory:
 				Intent historyIntent = new Intent(this, History.class);
 				historyIntent.putExtra("Password", password);
+				historyIntent.putExtra("aesKey", aes_key);
+				historyIntent.putExtra("logKey", log_key);
+				historyIntent.putExtra("balanceKey", balance_key);
 				startActivity(historyIntent);
 				break;
 			case R.id.bSync:

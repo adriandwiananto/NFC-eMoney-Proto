@@ -23,6 +23,26 @@ public class Converter {
 	}
 
 	public static int byteArrayToInteger(byte[] dataByte){
-		return ByteBuffer.wrap(dataByte).getInt();
+		if(dataByte.length < 4){
+			byte[] newDataByte = new byte[4];
+			System.arraycopy(dataByte, 0, newDataByte, newDataByte.length - dataByte.length, dataByte.length);
+			return ByteBuffer.wrap(newDataByte).getInt();
+		} else {
+			return ByteBuffer.wrap(dataByte).getInt();
+		}
+	}
+
+	public static byte[] longToByteArray(long dataLong){
+		return ByteBuffer.allocate(8).putLong(dataLong).array();
+	}
+	
+	public static long byteArrayToLong(byte[] dataByte){
+		if(dataByte.length < 8){
+			byte[] newDataByte = new byte[8];
+			System.arraycopy(dataByte, 0, newDataByte, newDataByte.length - dataByte.length, dataByte.length);
+			return ByteBuffer.wrap(newDataByte).getLong();
+		} else {
+			return ByteBuffer.wrap(dataByte).getLong();
+		}
 	}
 }

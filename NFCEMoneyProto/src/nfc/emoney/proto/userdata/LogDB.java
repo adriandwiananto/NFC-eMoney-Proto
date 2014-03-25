@@ -8,6 +8,7 @@ import nfc.emoney.proto.crypto.AES256cipher;
 import nfc.emoney.proto.misc.Converter;
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -40,6 +41,7 @@ public class LogDB extends SQLiteOpenHelper{
 	}
 	
 	public long insertLastTransToLog(byte[] transPacket){
+		Log.d(TAG,"transaction packet: "+Converter.byteArrayToHexString(transPacket));
 		SQLiteDatabase db = getWritableDatabase();
 		ContentValues CV =  new ContentValues();
 		
@@ -104,8 +106,22 @@ public class LogDB extends SQLiteOpenHelper{
 		return DatabaseUtils.queryNumEntries(db, TABLE);
 	}
 	
+	public Cursor getLogBlob(){
+		SQLiteDatabase db = getReadableDatabase();
+		Cursor c = db.query(TABLE, new String[]{CL_ID, CL_LOG}, null, null, null, null, CL_ID);
+		if (c != null) c.moveToFirst();
+		return c;
+	}
 	
 	public static void deleteDB(Context c){
 		c.deleteDatabase(DBLNAME);
+	}
+	
+	public String getLOGColumnName(){
+		return CL_LOG;
+	}
+
+	public String getIDColumnName(){
+		return CL_ID;
 	}
 }

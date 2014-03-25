@@ -36,7 +36,8 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	private final static String TAG = "{class} Network";
 	private final static int REGISTRATION_MODE = 99;
 	private final static int LOG_SYNC_MODE = 49;
-	
+	private final static String REG_SERVER = "http://emoney-server.herokuapp.com/register.json";
+			
 	private String hostname;
 	private String data,header,logs;
 	private String newPassword, newACCN, newIMEI;
@@ -51,10 +52,10 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	private KeyDerive key;
 	private Activity parentActivity;
 	
-	public Network(Activity parent, Context context, String host, JSONObject jobj, String NewPass, String ACCNtoSend, String HWID){
+	public Network(Activity parent, Context context, JSONObject jobj, String NewPass, String ACCNtoSend, String HWID){
 		ctx = context;
 		parentActivity = parent;
-		hostname = host;
+		hostname = REG_SERVER;
 		newPassword = NewPass;
 		newACCN = ACCNtoSend;
 		newIMEI = HWID;
@@ -106,13 +107,15 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 				nameValuePairs.add(new BasicNameValuePair("data", data));
 			}
 			else{
+				error = 5; //unknown param_mode
 				return null;
 			}
+			
 			httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
 			// Execute HTTP Post Request
 			HttpResponse response = httpclient.execute(httppost);
-
+			
 			BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent(), "UTF-8"));
 			String json = reader.readLine();
 			JSONTokener tokener = new JSONTokener(json);
@@ -122,18 +125,20 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			return finalResult;
 		} catch (Exception e) {
 			e.printStackTrace();
+			Log.d(TAG,"error:"+e.getMessage());
+			error = 1;
 			return null;
 		}
 	}
 
 	@Override
 	protected void onPreExecute() {
-		Toast.makeText(ctx, "Registration Starts", Toast.LENGTH_LONG).show();
+		Toast.makeText(ctx, "Registration Starts", Toast.LENGTH_SHORT).show();
 	}
 	 
 	@Override
 	protected void onPostExecute(JSONObject result) {
-		if (result.length() != 0) {
+		if (error == 0) {
 			// do something
 			jobj_response = result;
 			if(param_mode == REGISTRATION_MODE){
@@ -142,7 +147,8 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 					responseStatus = jobj_response.getString("result");
 					
 					if(responseStatus.compareTo("Error") == 0){
-						Toast.makeText(ctx, "Registration failed!!", Toast.LENGTH_LONG).show();
+						String errorMessage = jobj_response.getString("message");
+						Toast.makeText(ctx, "Registration failed!! "+errorMessage, Toast.LENGTH_LONG).show();
 						appdata.deleteAppData();
 						error = 3;
 					}
@@ -187,6 +193,15 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			error = 1;
 			Log.d(TAG,"Response is empty JSON Object");
 			appdata.deleteAppData();
+		}
+		
+		
+		//if error, new activity isn't called then execute bellow code
+		if(param_mode == REGISTRATION_MODE){
+			(parentActivity.findViewById(R.id.bRegConfirm)).setEnabled(true);
+			(parentActivity.findViewById(R.id.bRegCancel)).setEnabled(true);
+			(parentActivity.findViewById(R.id.tRegDebug)).setVisibility(View.INVISIBLE);
+			(parentActivity.findViewById(R.id.pReg)).setVisibility(View.GONE);
 		}
 	}
     

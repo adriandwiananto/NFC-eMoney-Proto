@@ -27,5 +27,6 @@
     <string name="bLoginProceed">Proceed</string>
     <string name="bLoginCancel">Cancel</string>
     <string name="tMainDebug">Waiting debug result</string>
+    <string name="tHistoryError">Failed to load log history!\nChange in App Data is forbidden and irreversible!</string>
 
 </resources>

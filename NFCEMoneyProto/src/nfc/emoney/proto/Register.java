@@ -22,7 +22,6 @@ public class Register extends Activity implements OnClickListener {
 	private final static String TAG = "{class} Register";
 	private AppData appdata;
 	private String ACCN, NewPass, ConfPass;
-	private static final String HOSTNAME = "http://emoney-server.herokuapp.com/register.json";
 	private ProgressBar spinner;
 			
 	@Override
@@ -38,6 +37,7 @@ public class Register extends Activity implements OnClickListener {
 		
 		((Button)findViewById(R.id.bRegConfirm)).setOnClickListener(this);
 		((Button)findViewById(R.id.bRegCancel)).setOnClickListener(this);
+		((TextView)findViewById(R.id.tRegDebug)).setVisibility(View.INVISIBLE);
 	}
 
 	@Override
@@ -57,8 +57,8 @@ public class Register extends Activity implements OnClickListener {
 				NewPass = ((EditText)findViewById(R.id.eRegNewPass)).getText().toString();
 				ConfPass = ((EditText)findViewById(R.id.eRegConfPass)).getText().toString();
 				
-//				if(ACCN.length() != 15){
-				if(ACCN.length() < 12){
+				if(ACCN.length() != 14){
+//				if(ACCN.length() < 12){
 					Toast.makeText(getApplicationContext(), "Incorrect Account ID length" , Toast.LENGTH_SHORT).show();
 					return;
 				}
@@ -73,11 +73,14 @@ public class Register extends Activity implements OnClickListener {
 					return;
 				}
 				
+				long lACCN = Long.parseLong(ACCN);
+				
 				JSONObject json = new JSONObject();
 				try {
 					json.put("HWID", appdata.getIMEI());
-					json.put("ACCN", ACCN);
+					json.put("ACCN", lACCN);
 					((TextView)findViewById(R.id.tRegDebug)).setText("JSON send:"+json.toString());
+					((TextView)findViewById(R.id.tRegDebug)).setVisibility(View.VISIBLE);
 				} catch (NumberFormatException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -88,7 +91,7 @@ public class Register extends Activity implements OnClickListener {
 				
 				Log.d(TAG,"Create asynctask");
 				String IMEI = String.valueOf(appdata.getIMEI());
-				Network net = new Network(Register.this ,getApplicationContext(), HOSTNAME, json, NewPass, ACCN, IMEI);
+				Network net = new Network(Register.this ,getApplicationContext(), json, NewPass, ACCN, IMEI);
 				net.execute();
 				Log.d(TAG,"Finish main thread");
 				break;
