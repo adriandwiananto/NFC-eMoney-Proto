@@ -36,7 +36,7 @@ public class KeyDerive {
 		return keyBytes;
 	}
 	
-	public boolean deriveKey(String password, String IMEI){
+	public void deriveKey(String password, String IMEI){
 		String salt = IMEI;
 		Log.d(TAG,"Start deriving key");
 		balance_key = Pbkdf2Derive(password, salt, 800);
@@ -48,7 +48,6 @@ public class KeyDerive {
 		keyEncryption_key = Pbkdf2Derive(password, salt, 1000);
 		Log.d(TAG,"transkey:"+Converter.byteArrayToHexString(keyEncryption_key));
 		Log.d(TAG,"Finish deriving key. Check the time!");
-		return true;
 	}
 	
 	public byte[] getBalanceKey(){

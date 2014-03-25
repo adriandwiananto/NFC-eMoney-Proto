@@ -34,7 +34,7 @@ public class History extends Activity{
 	TextView tMsg;
 	private Cursor cur;
 	private LogDB db;
-	private byte[] aes_key, log_key, balance_key;
+	private byte[] log_key;
 	private List<String[]> colorList;
 	private boolean error;
 	private AppData appdata;
@@ -47,9 +47,7 @@ public class History extends Activity{
         error = false;
         
         Intent myIntent = getIntent();
-		aes_key = myIntent.getByteArrayExtra("aesKey");
 		log_key = myIntent.getByteArrayExtra("logKey");
-		balance_key = myIntent.getByteArrayExtra("balanceKey");
 	
 		appdata = new AppData(this);
 		colorList = new LinkedList<String[]>();
@@ -84,13 +82,13 @@ public class History extends Activity{
     					Log.d(TAG,"decryptedLog: "+Converter.byteArrayToHexString(decryptedLog));
     					byte[] NUM = Arrays.copyOfRange(decryptedLog, 0, 3);
     					byte PT = decryptedLog[3];
-    					byte[] binaryID = Arrays.copyOfRange(decryptedLog, 4, 8);
+//    					byte[] binaryID = Arrays.copyOfRange(decryptedLog, 4, 8);
     					byte[] accnM = Arrays.copyOfRange(decryptedLog, 8, 14);
     					byte[] accnP = Arrays.copyOfRange(decryptedLog, 14, 20);
     					byte[] amnt = Arrays.copyOfRange(decryptedLog, 20, 24);
     					byte[] TS = Arrays.copyOfRange(decryptedLog, 24, 28);
-    					byte STAT = decryptedLog[28];
-    					byte CNL = decryptedLog[29];
+//    					byte STAT = decryptedLog[28];
+//    					byte CNL = decryptedLog[29];
     					
     					if(rowNum != Converter.byteArrayToInteger(NUM)){
     						error = true;

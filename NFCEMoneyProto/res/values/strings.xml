@@ -13,9 +13,9 @@
     <string name="bPayCancel">Cancel</string>
     <string name="tPaySESN">Security Number\t\t\t:</string>
     <string name="tPayAmount">Amount\t\t\t\t\t\t\t:</string>
-    <string name="tOptionOldPass">Old PIN\t\t\t\t:</string>
-    <string name="tOptionNewPass">New PIN\t\t\t:</string>
-    <string name="tOptionConfPass">Confirm PIN\t\t:</string>
+    <string name="tOptionOldPass">Current PIN\t\t\t\t\t:</string>
+    <string name="tOptionNewPass">New PIN\t\t\t\t\t\t:</string>
+    <string name="tOptionConfPass">Confirm PIN\t\t\t\t\t:</string>
     <string name="bOptionProceed">Proceed</string>
     <string name="bOptionCancel">Cancel</string>
     <string name="tRegACCN">Account ID :</string>

@@ -21,11 +21,12 @@
             android:text="@string/tOptionOldPass" />
 
         <EditText
-            android:id="@+id/eOptionOldPass"
+            android:id="@+id/eOptionCurPass"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:ems="10" >
+            android:ems="10"
+            android:inputType="numberPassword" >
 
             <requestFocus />
         </EditText>
@@ -49,8 +50,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:ems="10" />
-
+            android:ems="10"
+            android:inputType="numberPassword" />
     </LinearLayout>
 
     <LinearLayout
@@ -70,8 +71,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:ems="10" />
-
+            android:ems="10"
+            android:inputType="numberPassword" />
     </LinearLayout>
 
     <LinearLayout
@@ -94,5 +95,13 @@
             android:text="@string/bOptionCancel" />
 
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/pOption"
+        style="?android:attr/progressBarStyleLarge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical|center_horizontal"
+        android:visibility="gone" />
 
 </LinearLayout>
