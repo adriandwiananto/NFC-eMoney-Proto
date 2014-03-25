@@ -102,12 +102,13 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						mNfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(Pay.this, Pay.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 						
 						Packet packet = new Packet(amountInt, sesnInt, accnLong, lastTS, aesKey);
-						toSend = packet.buildTransPacket();
+						byte[] packetArrayToSend = packet.buildTransPacket();
+						toSend = packet.createNDEFMessage("data/trans", packetArrayToSend);
 						
 						byte[] plainPayload = new byte[32];
 						System.arraycopy(packet.getPlainPacket(), 7, plainPayload, 0, 32);
 						
-						tDebug.setText("Data packet to send:\n"+Converter.byteArrayToHexString(packet.getPacketToSend()));
+						tDebug.setText("Data packet to send:\n"+Converter.byteArrayToHexString(packetArrayToSend));
 						tDebug.append("\nPlain payload:\n"+Converter.byteArrayToHexString(plainPayload));
 						tDebug.append("\nCiphered payload:\n"+Converter.byteArrayToHexString(packet.getCipherPacket()));
 						tDebug.append("\naes key:\n"+aesKey);

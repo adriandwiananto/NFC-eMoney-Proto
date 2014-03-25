@@ -18,7 +18,6 @@ public class AppData {
 	private SharedPreferences Pref;
 	private Context ctx;
 	private String IMEI;
-	private byte[] balance_key, log_key, keyEncryption_key;
 	private long lIMEI;
 	
 	public AppData(Context context) {
@@ -27,22 +26,6 @@ public class AppData {
 		Pref = PreferenceManager.getDefaultSharedPreferences(ctx);
 	}
 
-	public boolean deriveKey(String password, String IMEI){
-		String salt = IMEI;
-		KeyDerive key = new KeyDerive();
-		Log.d(TAG,"Start deriving key");
-		balance_key = key.Pbkdf2Derive(password, salt, 800);
-		Log.d(TAG,"balancekey:"+Converter.byteArrayToHexString(balance_key));
-		
-		log_key = key.Pbkdf2Derive(password, salt, 900);
-		Log.d(TAG,"logkey:"+Converter.byteArrayToHexString(log_key));
-		
-		keyEncryption_key = key.Pbkdf2Derive(password, salt, 1000);
-		Log.d(TAG,"transkey:"+Converter.byteArrayToHexString(keyEncryption_key));
-		Log.d(TAG,"Finish deriving key. Check the time!");
-		return true;
-	}
-	
 	public void setACCN(long lACCN) {
 		// TODO Auto-generated method stub
 		Editor edit = Pref.edit();
@@ -94,7 +77,7 @@ public class AppData {
 		return Pref.getLong("LATS", 0);
 	}
 
-	public void setBalance(int Balance) {
+	public void setBalance(int Balance, byte[] balance_key) {
 		// TODO Auto-generated method stub
 		
 		//derive key
@@ -128,7 +111,7 @@ public class AppData {
 		return Pref.getString("Balance", "");
 	}
 	
-	public int getDecryptedBalance(){
+	public int getDecryptedBalance(byte[] balance_key){
 		
 		//ambil dari Pref
 		//derive key
@@ -181,7 +164,7 @@ public class AppData {
 		edit.commit();
 	}
 
-	public void setKey(byte[] aesKey) {
+	public void setKey(byte[] aesKey, byte[] keyEncryption_key) {
 		// TODO Auto-generated method stub
 		// derive key
 		// encrypt key
@@ -228,7 +211,7 @@ public class AppData {
 		return Pref.getString("AESKEY", "");
 	}
 	
-	public byte[] getDecryptedKey(){
+	public byte[] getDecryptedKey(byte[] keyEncryption_key){
 		String wrappedAll = Pref.getString("AESKEY", "");
 		byte[] wrappedAllArr = Converter.hexStringToByteArray(wrappedAll);
 		Log.d(TAG,"aeskey from sharedpref:"+wrappedAll);
@@ -249,17 +232,5 @@ public class AppData {
 		}
 		
 		return plainKey;
-	}
-	
-	public byte[] getBalanceKey(){
-		return balance_key;
-	}
-
-	public byte[] getLogKey(){
-		return log_key;
-	}
-	
-	public byte[] getKeyEncryptionKey(){
-		return keyEncryption_key;
 	}
 }

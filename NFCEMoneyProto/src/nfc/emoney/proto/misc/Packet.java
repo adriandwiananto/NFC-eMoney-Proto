@@ -17,7 +17,6 @@ public class Packet {
 	private long ACCN;
 	private long LATS;
 	private String aesKey;
-	private byte[] packetToSend;
 	private byte[] plainPacket;
 	private byte[] cipherPacket;
 	
@@ -30,7 +29,7 @@ public class Packet {
 		aesKey = aes_key;
 	}
 
-	public NdefMessage buildTransPacket() {
+	public byte[] buildTransPacket() {
 		// TODO Auto-generated method stub
 		int intAmount = Amount;
 		int intSESN = SESN;
@@ -86,23 +85,25 @@ public class Packet {
 			System.arraycopy(trans, 0, transFinal, 0, 7);
 			System.arraycopy(ciphertext, 0, transFinal, 7, 32);
 			System.arraycopy(randomIV, 0, transFinal, 39, 16);
-			packetToSend = transFinal;
 		}
 		
-		NdefMessage msg =  new NdefMessage(new NdefRecord[]{createNDEFRecord("data/trans", transFinal)});
-		return msg;
+		return transFinal;
+//		NdefMessage msg =  new NdefMessage(new NdefRecord[]{createNDEFRecord("data/trans", transFinal)});
+//		return msg;
 	}
 
-	private NdefRecord createNDEFRecord(String mime, byte[] payload) {
+	public NdefMessage createNDEFMessage(String mime, byte[] payload) {
 		byte[] mimeb = mime.getBytes(Charset.forName("US-ASCII"));
 		NdefRecord mrec = new NdefRecord(NdefRecord.TNF_MIME_MEDIA, mimeb, new byte[0], payload);
-		return mrec;
+		NdefMessage msg = new NdefMessage(new NdefRecord[]{mrec});
+		return msg;
 	}
+//	private NdefRecord createNDEFRecord(String mime, byte[] payload) {
+//		byte[] mimeb = mime.getBytes(Charset.forName("US-ASCII"));
+//		NdefRecord mrec = new NdefRecord(NdefRecord.TNF_MIME_MEDIA, mimeb, new byte[0], payload);
+//		return mrec;
+//	}
 	
-	public byte[] getPacketToSend(){
-		return packetToSend;
-	}
-
 	public byte[] getPlainPacket(){
 		return plainPacket;
 	}

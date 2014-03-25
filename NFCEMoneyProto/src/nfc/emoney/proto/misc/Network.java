@@ -8,6 +8,7 @@ import java.util.List;
 
 import nfc.emoney.proto.Login;
 import nfc.emoney.proto.R;
+import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.userdata.AppData;
 
 import org.apache.http.HttpResponse;
@@ -47,6 +48,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	
 	private Context ctx;
 	private AppData appdata;
+	private KeyDerive key;
 	private Activity parentActivity;
 	
 	public Network(Activity parent, Context context, String host, JSONObject jobj, String NewPass, String ACCNtoSend, String HWID){
@@ -56,6 +58,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 		newPassword = NewPass;
 		newACCN = ACCNtoSend;
 		newIMEI = HWID;
+		key = new KeyDerive();
 		error = 0;
 		
 		param_mode = REGISTRATION_MODE;
@@ -153,10 +156,10 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 						Log.d(TAG,"Start writing shared pref");
 						appdata.setACCN(Long.parseLong(newACCN));
 						appdata.setPass(newPassword);
-						appdata.deriveKey(newPassword, newIMEI);
-						appdata.setKey(aesKey);						
+						key.deriveKey(newPassword, newIMEI);
+						appdata.setKey(aesKey, key.getKeyEncryptionKey());						
 						appdata.setLATS(System.currentTimeMillis() / 1000);
-						appdata.setBalance(100000);
+						appdata.setBalance(100000, key.getBalanceKey());
 						Log.d(TAG,"Finish writing shared pref");
 						
 						Toast.makeText(ctx, "Registration Success", Toast.LENGTH_LONG).show();

@@ -1,5 +1,6 @@
 package nfc.emoney.proto;
 
+import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
 import android.nfc.NfcAdapter;
@@ -35,6 +36,7 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 	private String password;
 	private long lIMEI;
 	private String aesKeyString;
+	private KeyDerive key;
 	
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
@@ -52,10 +54,10 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 			bSync.setEnabled(true);
 			bOption.setEnabled(true);
 			
-			debug.setText("KEK:\n"+Converter.byteArrayToHexString(appdata.getKeyEncryptionKey()));
-			debug.append("\nBalance Key:\n"+Converter.byteArrayToHexString(appdata.getBalanceKey()));
-			debug.append("\nLog Key:\n"+Converter.byteArrayToHexString(appdata.getLogKey()));
-			debug.append("\nTransaction Key:\n"+Converter.byteArrayToHexString(appdata.getDecryptedKey()));
+			debug.setText("KEK:\n"+Converter.byteArrayToHexString(key.getKeyEncryptionKey()));
+			debug.append("\nBalance Key:\n"+Converter.byteArrayToHexString(key.getBalanceKey()));
+			debug.append("\nLog Key:\n"+Converter.byteArrayToHexString(key.getLogKey()));
+			debug.append("\nTransaction Key:\n"+Converter.byteArrayToHexString(appdata.getDecryptedKey(key.getKeyEncryptionKey())));
 		}
 	};
 		 
@@ -121,12 +123,14 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 	        	password = myIntent.getStringExtra("Password");
 	        	Log.d(TAG,"Password:"+password);
 	        	
+    			key = new KeyDerive();
+
 	        	Runnable runnable = new Runnable(){
 	        		public void run(){
 	        			Message msg = handler.obtainMessage();
-	        			appdata.deriveKey(password, String.valueOf(lIMEI));
-	        			int decryptedBalance = appdata.getDecryptedBalance();
-	        			byte[] aesKey = appdata.getDecryptedKey();
+	        			key.deriveKey(password, String.valueOf(lIMEI));
+	        			int decryptedBalance = appdata.getDecryptedBalance(key.getBalanceKey());
+	        			byte[] aesKey = appdata.getDecryptedKey(key.getKeyEncryptionKey());
 	        			Bundle bundle = new Bundle();
 	        			bundle.putString("Balance", String.valueOf(decryptedBalance));
 	        			bundle.putByteArray("aesKeyByte", aesKey);
