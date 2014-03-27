@@ -5,7 +5,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class Hash {
 	
-	public static byte[] Sha256Hash(String password) {
+	public static byte[] sha256Hash(String text) {
 		MessageDigest digest=null;
 		try {
 			digest = MessageDigest.getInstance("SHA-256");
@@ -14,6 +14,6 @@ public class Hash {
 			e1.printStackTrace();
 		}
 		digest.reset();
-		return digest.digest(password.getBytes());
+		return digest.digest(text.getBytes());
 	}
 }

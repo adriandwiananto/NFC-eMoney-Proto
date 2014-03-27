@@ -19,7 +19,7 @@ public class KeyDerive {
 		keyLength = 256;
 	}
 	
-	private byte[] Pbkdf2Derive(String password, String salt, int iteration){
+	private byte[] pbkdf2Derive(String password, String salt, int iteration){
 		KeySpec keySpec = new PBEKeySpec(password.toCharArray(), salt.getBytes(), iteration, keyLength);
 		SecretKeyFactory keyFactory;
 		byte[] keyBytes = new byte[32];
@@ -39,13 +39,13 @@ public class KeyDerive {
 	public void deriveKey(String password, String IMEI){
 		String salt = IMEI;
 		Log.d(TAG,"Start deriving key");
-		balance_key = Pbkdf2Derive(password, salt, 800);
+		balance_key = pbkdf2Derive(password, salt, 800);
 		Log.d(TAG,"balancekey:"+Converter.byteArrayToHexString(balance_key));
 		
-		log_key = Pbkdf2Derive(password, salt, 900);
+		log_key = pbkdf2Derive(password, salt, 900);
 		Log.d(TAG,"logkey:"+Converter.byteArrayToHexString(log_key));
 		
-		keyEncryption_key = Pbkdf2Derive(password, salt, 1000);
+		keyEncryption_key = pbkdf2Derive(password, salt, 1000);
 		Log.d(TAG,"transkey:"+Converter.byteArrayToHexString(keyEncryption_key));
 		Log.d(TAG,"Finish deriving key. Check the time!");
 	}

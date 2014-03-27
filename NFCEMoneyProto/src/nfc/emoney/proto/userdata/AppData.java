@@ -57,7 +57,7 @@ public class AppData {
 		String hashed = newPass.concat(String.valueOf(this.getIMEI()));
 		Log.d(TAG,"Password to hashed:"+hashed);
 		Editor edit = Pref.edit();
-		edit.putString("Pass", Converter.byteArrayToHexString(Hash.Sha256Hash(hashed)));
+		edit.putString("Pass", Converter.byteArrayToHexString(Hash.sha256Hash(hashed)));
 		edit.commit();
 	}
 	

@@ -22,7 +22,7 @@ public class LogDB extends SQLiteOpenHelper{
 	private static String CL_ID = "_id";
 	private static String CL_LOG = "_log";
 	
-	private byte[]logKey;
+	private byte[] logKey;
 	
 	public LogDB(Context c, byte[] log_key){
 		super(c, DBLNAME, null, 1);
@@ -93,60 +93,13 @@ public class LogDB extends SQLiteOpenHelper{
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return 0;
 		}
 		
 		CV.put(CL_LOG, logIv);
 		long rowid = db.insert(TABLE, null, CV);
 		//db.close();
 		return rowid;
-	}
-	
-	public void changeLogKey(byte[] newLogKey){
-		SQLiteDatabase db = getWritableDatabase();
-		ContentValues CV =  new ContentValues();
-
-		Cursor c = db.query(TABLE, new String[]{CL_ID, CL_LOG}, null, null, null, null, CL_ID);
-		if(c != null){
-			c.moveToFirst();
-			while(c.isAfterLast() == false){
-				byte[] encryptedLog = c.getBlob(c.getColumnIndex(this.getLOGColumnName()));
-				Log.d(TAG,"encryptedLog: "+Converter.byteArrayToHexString(encryptedLog));
-				int rowNum = c.getInt(c.getColumnIndex(this.getIDColumnName()));
-				byte[] iv = Arrays.copyOfRange(encryptedLog, 32, 48);
-				byte[] logOnly = Arrays.copyOfRange(encryptedLog, 0, 32);
-				
-				try{
-					byte[] decryptedLog = AES256cipher.decrypt(iv, logKey, logOnly);
-					Log.d(TAG,"decryptedLog: "+Converter.byteArrayToHexString(decryptedLog));
-					
-					byte[] newEncryptedLog = new byte[32];
-					byte[] newIv = new byte[16];
-					byte[] newLogIv = new byte[48];
-
-					SecureRandom random = new SecureRandom();		
-					random.nextBytes(newIv);
-					
-					System.arraycopy(newIv, 0, newLogIv, 32, 16);
-					
-					newEncryptedLog = AES256cipher.encrypt(newIv, newLogKey, decryptedLog);
-					System.arraycopy(newEncryptedLog, 0, newLogIv, 0, 32);
-					Log.d(TAG,"new log key:"+Converter.byteArrayToHexString(newLogKey));
-					Log.d(TAG,"newly encrypted log:"+Converter.byteArrayToHexString(newLogIv));
-					CV.put(CL_LOG, newLogIv);
-					int updatedRow = db.update(TABLE, CV, CL_ID + "=" + rowNum, null);
-					
-					if(updatedRow != rowNum){
-						return;
-					}
-					
-					c.moveToNext();
-					
-				} catch (Exception e) {
-					e.printStackTrace();
-					return;
-				}
-			}
-		}
 	}
 	
 	public long rowCountLog(){
@@ -159,6 +112,93 @@ public class LogDB extends SQLiteOpenHelper{
 		Cursor c = db.query(TABLE, new String[]{CL_ID, CL_LOG}, null, null, null, null, CL_ID);
 		if (c != null) c.moveToFirst();
 		return c;
+	}
+	
+	public class LogOperation{
+		private boolean error;
+		private final static String TAG = "{SubClass} LogOperation";
+		public LogOperation(){
+			error = false;
+		}
+		
+		public byte[] getDecrpytedLogPerRow(Cursor cur, byte[] log_key){
+			byte[] encryptedLog = cur.getBlob(cur.getColumnIndex(CL_LOG));
+			Log.d(TAG,"encryptedLog: "+Converter.byteArrayToHexString(encryptedLog));
+			byte[] iv = Arrays.copyOfRange(encryptedLog, 32, 48);
+			byte[] logOnly = Arrays.copyOfRange(encryptedLog, 0, 32);
+			
+			byte[] decryptedLog = new byte[32];
+			
+			try{
+				decryptedLog = AES256cipher.decrypt(iv, log_key, logOnly);
+				Log.d(TAG,"decryptedLog: "+Converter.byteArrayToHexString(decryptedLog));
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.d(TAG,"exception thrown by decrypt log per row method");
+				error = true;
+			}
+			
+			return decryptedLog;
+		}
+		
+		public boolean changeLogKey(byte[] newLogKey){
+			SQLiteDatabase db = getWritableDatabase();
+			ContentValues CV =  new ContentValues();
+
+			Cursor c = db.query(TABLE, new String[]{CL_ID, CL_LOG}, null, null, null, null, CL_ID);
+			int totalRow = 0;
+			if(c != null){
+				totalRow = c.getCount();
+				Log.d(TAG,"total row:"+totalRow);
+				
+				byte[][] newLogIv = new byte[totalRow][48];
+				c.moveToFirst();
+				while(c.isAfterLast() == false){
+					int rowNum = c.getInt(c.getColumnIndex(CL_ID));
+					Log.d(TAG,"current operation on row:"+rowNum);
+					try{
+						byte[] decryptedLog = this.getDecrpytedLogPerRow(c, logKey);
+						if(error == true){
+							Log.d(TAG,"error decrypt");
+							return false;
+						}
+						
+						byte[] newEncryptedLog = new byte[32];
+						byte[] newIv = new byte[16];
+
+						SecureRandom random = new SecureRandom();		
+						random.nextBytes(newIv);
+						
+						System.arraycopy(newIv, 0, newLogIv[rowNum-1], 32, 16);
+						
+						newEncryptedLog = AES256cipher.encrypt(newIv, newLogKey, decryptedLog);
+						System.arraycopy(newEncryptedLog, 0, newLogIv[rowNum-1], 0, 32);
+						Log.d(TAG,"new log key:"+Converter.byteArrayToHexString(newLogKey));
+						Log.d(TAG,"newly encrypted log:"+Converter.byteArrayToHexString(newLogIv[rowNum-1]));
+
+						c.moveToNext();
+						
+					} catch (Exception e) {
+						e.printStackTrace();
+						Log.d(TAG,"exception thrown by change log key method");
+						return false;
+					}
+				}
+				
+				int index = 0;
+				for(index = 0; index < totalRow; index = index+1){
+					CV.put(CL_LOG, newLogIv[index]);
+					db.update(TABLE, CV, CL_ID + "=" + (index+1), null);
+				}
+				return true;
+			} else {
+				return false;
+			}
+		}
+		
+		public boolean getError(){
+			return error;
+		}
 	}
 	
 	public static void deleteDB(Context c){

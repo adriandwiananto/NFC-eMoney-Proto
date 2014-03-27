@@ -5,6 +5,7 @@ import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
 import nfc.emoney.proto.userdata.LogDB;
+import nfc.emoney.proto.userdata.LogDB.LogOperation;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
@@ -29,7 +30,7 @@ public class Option extends Activity implements OnClickListener{
 	Button proceed, cancel;
 	ProgressBar pOption;
 	AppData appdata;
-	LogDB ldb;
+	private String passExtra;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -40,9 +41,9 @@ public class Option extends Activity implements OnClickListener{
 		aes_key = myIntent.getByteArrayExtra("aesKey");
 		log_key = myIntent.getByteArrayExtra("logKey");
 		balance_key = myIntent.getByteArrayExtra("balanceKey");
+		passExtra = myIntent.getStringExtra("Password");
 		
 		appdata = new AppData(this);
-		ldb = new LogDB(this, log_key);
 		currentActivity = Option.this;
 		
 		proceed = (Button)findViewById(R.id.bOptionProceed);
@@ -78,10 +79,10 @@ public class Option extends Activity implements OnClickListener{
 				}
 				
 				String passSalt = curPassStr.concat(String.valueOf(appdata.getIMEI()));
-				byte[] hashed = Hash.Sha256Hash(passSalt);
+				byte[] hashed = Hash.sha256Hash(passSalt);
 				String hashedStr = Converter.byteArrayToHexString(hashed);
 				
-				if(hashedStr.compareTo(appdata.getPass()) != 0){
+				if((hashedStr.compareTo(appdata.getPass()) != 0) && (curPassStr.compareTo(passExtra) != 0)){
 					Toast.makeText(getApplicationContext(), "Incorrect password", Toast.LENGTH_SHORT).show();
 					return;
 				}
@@ -99,14 +100,25 @@ public class Option extends Activity implements OnClickListener{
 						byte[] newLog_key = kd.getLogKey();
 						byte[] newKeyEncryption_key = kd.getKeyEncryptionKey();
 						
-						ldb.changeLogKey(newLog_key);
-						int balance = appdata.getDecryptedBalance(balance_key);
-						int verifiedBalance = appdata.getDecryptedVerifiedBalance(balance_key);
+						Bundle bundle = new Bundle();
 						
-						appdata.setPass(newPassStr);
-						appdata.setBalance(balance, newBalance_key);
-						appdata.setVerifiedBalance(verifiedBalance, newBalance_key);
-						appdata.setKey(aes_key, newKeyEncryption_key);
+						LogDB ldb = new LogDB(getApplicationContext(), log_key);
+						LogOperation lo = ldb.new LogOperation();
+						
+						if(lo.changeLogKey(newLog_key) == true)
+						{
+							int balance = appdata.getDecryptedBalance(balance_key);
+							int verifiedBalance = appdata.getDecryptedVerifiedBalance(balance_key);
+							
+							appdata.setPass(newPassStr);
+							appdata.setBalance(balance, newBalance_key);
+							appdata.setVerifiedBalance(verifiedBalance, newBalance_key);
+							appdata.setKey(aes_key, newKeyEncryption_key);
+							bundle.putBoolean("error", false);
+						} else {
+							bundle.putBoolean("error", true);
+						}
+						msg.setData(bundle);
 						handler.sendMessage(msg);
 					}
 				};
@@ -114,19 +126,39 @@ public class Option extends Activity implements OnClickListener{
 				changePassword.start();
 				break;
 			case R.id.bOptionCancel:
+				Intent newIntent = new Intent(this,MainActivity.class);
+				newIntent.putExtra("Password", passExtra);
+				startActivity(newIntent);
 				finish();
 				break;
 		}
+	}
+	
+	@Override
+	public void onBackPressed() {
+		Intent newIntent = new Intent(this,MainActivity.class);
+		newIntent.putExtra("Password", passExtra);
+		startActivity(newIntent);
+		finish();
 	}
 	
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
-			Toast.makeText(getApplicationContext(), "Password changed successfully!", Toast.LENGTH_LONG).show();
 			pOption.setVisibility(View.GONE);
-    		startActivity(new Intent(currentActivity, Login.class));
-			currentActivity.finish();
+			proceed.setEnabled(true);
+			cancel.setEnabled(true);
+			
+			Bundle bundle = msg.getData();
+			boolean error = bundle.getBoolean("error", true);
+			if(error == true){
+				Toast.makeText(getApplicationContext(), "Password changing error!", Toast.LENGTH_LONG).show();
+			} else {
+				Toast.makeText(getApplicationContext(), "Password changed successfully!", Toast.LENGTH_LONG).show();
+	    		startActivity(new Intent(currentActivity, Login.class));
+				currentActivity.finish();
+			}
 		}
 	};
 }

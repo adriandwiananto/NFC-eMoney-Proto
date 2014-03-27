@@ -2,6 +2,7 @@ package nfc.emoney.proto;
 
 import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.misc.Converter;
+import nfc.emoney.proto.misc.Network;
 import nfc.emoney.proto.userdata.AppData;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAdapter.OnNdefPushCompleteCallback;
@@ -36,7 +37,7 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 	private String password;
 	private long lIMEI;
 	private KeyDerive key;
-	private byte[] aes_key, log_key, balance_key;
+	private byte[] aes_key, keyEncryption_key, log_key, balance_key;
 	
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
@@ -129,7 +130,8 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 	        			Message msg = handler.obtainMessage();
 	        			key.deriveKey(password, String.valueOf(lIMEI));
 	        			int decryptedBalance = appdata.getDecryptedBalance(key.getBalanceKey());
-	        			aes_key = appdata.getDecryptedKey(key.getKeyEncryptionKey());
+	        			keyEncryption_key = key.getKeyEncryptionKey();
+	        			aes_key = appdata.getDecryptedKey(keyEncryption_key);
 	        			log_key = key.getLogKey();
 	        			balance_key = key.getBalanceKey();
 	        			
@@ -177,6 +179,15 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 			case R.id.bSync:
 				//new thread
 				//http post
+				balanceLoading.setVisibility(View.VISIBLE);
+				balance.setVisibility(View.GONE);
+				bPay.setEnabled(false);
+				bHistory.setEnabled(false);
+				bSync.setEnabled(false);
+				bOption.setEnabled(false);
+				
+				Network sync = new Network(MainActivity.this, getApplicationContext(), keyEncryption_key, log_key, balance_key);
+				sync.execute();
 				break;
 			case R.id.bOption:
 				Intent optionIntent = new Intent(this, Option.class);
@@ -185,6 +196,7 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 				optionIntent.putExtra("logKey", log_key);
 				optionIntent.putExtra("balanceKey", balance_key);
 				startActivity(optionIntent);
+				finish();
 				break;
 		}
 	}

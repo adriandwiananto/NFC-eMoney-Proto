@@ -7,10 +7,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 
-import nfc.emoney.proto.crypto.AES256cipher;
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
 import nfc.emoney.proto.userdata.LogDB;
+import nfc.emoney.proto.userdata.LogDB.LogOperation;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
@@ -33,7 +33,6 @@ public class History extends Activity{
 	ProgressBar pHistory;
 	TextView tMsg;
 	private Cursor cur;
-	private LogDB db;
 	private byte[] log_key;
 	private List<String[]> colorList;
 	private boolean error;
@@ -68,18 +67,16 @@ public class History extends Activity{
         Runnable runnable = new Runnable(){
     		public void run(){
     			Message msg = handler.obtainMessage();
-    			db = new LogDB(getApplicationContext(), log_key);
+    			LogDB db = new LogDB(getApplicationContext(), log_key);
     	        cur = db.getLogBlob();
     			while((cur.isAfterLast() == false) && (error == false)){
-    				byte[] encryptedLog = cur.getBlob(cur.getColumnIndex(db.getLOGColumnName()));
-    				Log.d(TAG,"encryptedLog: "+Converter.byteArrayToHexString(encryptedLog));
     				int rowNum = cur.getInt(cur.getColumnIndex(db.getIDColumnName()));
-    				byte[] iv = Arrays.copyOfRange(encryptedLog, 32, 48);
-    				byte[] logOnly = Arrays.copyOfRange(encryptedLog, 0, 32);
+
+    				LogOperation lo = db.new LogOperation();
+    				byte[] decryptedLog = lo.getDecrpytedLogPerRow(cur, log_key);
+    				error = lo.getError();
     				
-    				try{
-    					byte[] decryptedLog = AES256cipher.decrypt(iv, log_key, logOnly);
-    					Log.d(TAG,"decryptedLog: "+Converter.byteArrayToHexString(decryptedLog));
+    				if(error == false){
     					byte[] NUM = Arrays.copyOfRange(decryptedLog, 0, 3);
     					byte PT = decryptedLog[3];
 //    					byte[] binaryID = Arrays.copyOfRange(decryptedLog, 4, 8);
@@ -111,15 +108,8 @@ public class History extends Activity{
     					}
     					
     					cur.moveToNext();
-    					
-    				}catch(Exception e){
-    					e.printStackTrace();
     				}
     			}
-    			
-//    	        colorList.add(new String[] { "Red", "the color red" });
-//    	        colorList.add(new String[] { "Green", "the color green" });
-//    	        colorList.add(new String[] { "Blue", "the color blue" });
     			
     			Bundle bundle = new Bundle();
     			bundle.putBoolean("error", error);
@@ -140,10 +130,6 @@ public class History extends Activity{
 			Bundle bundle = msg.getData();
 			boolean error = bundle.getBoolean("error");
 			int logRow = bundle.getInt("logRow");
-			
-//	        colorList.add(new String[] { "Red", "the color red" });
-//	        colorList.add(new String[] { "Green", "the color green" });
-//	        colorList.add(new String[] { "Blue", "the color blue" });
 			
 			if(error == false){
 				if(logRow > 0){

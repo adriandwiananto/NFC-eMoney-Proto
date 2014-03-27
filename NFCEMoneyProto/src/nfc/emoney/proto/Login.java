@@ -69,7 +69,7 @@ public class Login extends Activity implements OnClickListener {
 				password = ((EditText)findViewById(R.id.eLoginPassword)).getText().toString();
 				String passSalt = password.concat(String.valueOf(appdata.getIMEI()));
 				
-				byte[] hashed = Hash.Sha256Hash(passSalt);
+				byte[] hashed = Hash.sha256Hash(passSalt);
 				String hashedStr = Converter.byteArrayToHexString(hashed);
 				
 				if(hashedStr.compareTo(appdata.getPass()) == 0){
