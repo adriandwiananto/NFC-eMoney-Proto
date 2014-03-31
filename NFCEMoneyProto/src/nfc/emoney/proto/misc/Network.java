@@ -34,7 +34,9 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
+//import nfc.emoney.proto.R;
 
 public class Network extends AsyncTask<Void, Void, JSONObject> {
 
@@ -208,6 +210,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	@Override
 	protected void onPostExecute(JSONObject result) {
 		int returnBalance = 0;
+		int returnTS = 0;
 		boolean returnRenewKey = false;
 		String returnNewKey = "";
 		
@@ -240,10 +243,12 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 						keyEncryption_key = key.getKeyEncryptionKey();
 						balance_key = key.getBalanceKey();
 						
+						returnBalance = jobj_response.getInt("balance");
+						returnTS = jobj_response.getInt("last_sync_at");
 						appdata.setKey(aesKey, keyEncryption_key);						
-						appdata.setLATS(System.currentTimeMillis() / 1000);
-						appdata.setBalance(100000, balance_key);
-						appdata.setVerifiedBalance(100000, balance_key);
+						appdata.setLATS(returnTS);
+						appdata.setBalance(returnBalance, balance_key);
+						appdata.setVerifiedBalance(returnBalance, balance_key);
 						Log.d(TAG,"Finish writing shared pref");
 						
 						Toast.makeText(ctx, "Registration Success", Toast.LENGTH_LONG).show();
@@ -270,10 +275,12 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 					}
 					
 					returnBalance = jobj_response.getInt("balance");
+					returnTS = jobj_response.getInt("last_sync_at");
 					JSONObject returnKey = jobj_response.getJSONObject("key");
 					returnRenewKey = returnKey.getBoolean("renew");
-					returnNewKey = returnKey.getString("new_key");
-					
+					if(returnRenewKey == true){
+						returnNewKey = returnKey.getString("new_key");
+					}
 				} catch (Exception e) {
 					e.printStackTrace();
 					error = 4;
@@ -299,18 +306,11 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			(parentActivity.findViewById(R.id.tRegDebug)).setVisibility(View.INVISIBLE);
 			(parentActivity.findViewById(R.id.pReg)).setVisibility(View.GONE);
 		} else if (param_mode == LOG_SYNC_MODE) { //error or no error, this will be executed after sync
-			(parentActivity.findViewById(R.id.pMain)).setVisibility(View.GONE);
-			(parentActivity.findViewById(R.id.tMainBalanceUnverified)).setVisibility(View.VISIBLE);
-			(parentActivity.findViewById(R.id.bPay)).setEnabled(true);
-			(parentActivity.findViewById(R.id.bHistory)).setEnabled(true);
-			(parentActivity.findViewById(R.id.bSync)).setEnabled(true);
-			(parentActivity.findViewById(R.id.bOption)).setEnabled(true);
-			
 			if(error == 0){
 				Log.d(TAG,"new balance:"+returnBalance);
 				appdata.setBalance(returnBalance, balance_key);
 				appdata.setVerifiedBalance(returnBalance, balance_key);
-				appdata.setLATS(System.currentTimeMillis() / 1000);
+				appdata.setLATS(returnTS);
 				if(returnRenewKey == true){
 					appdata.setKey(Converter.hexStringToByteArray(returnNewKey), keyEncryption_key);
 					Log.d(TAG,"new key:"+returnNewKey);
@@ -319,8 +319,16 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 				Toast.makeText(ctx, "Sync success", Toast.LENGTH_LONG).show();
 			} else {
 				Toast.makeText(ctx, "Sync failed", Toast.LENGTH_LONG).show();
+				Log.d(TAG,"error:"+error);
 			}
 			
+			(parentActivity.findViewById(R.id.pMain)).setVisibility(View.GONE);
+			((TextView) parentActivity.findViewById(R.id.tMainBalanceUnverified)).setText(String.valueOf(appdata.getDecryptedBalance(balance_key)));
+			(parentActivity.findViewById(R.id.tMainBalanceUnverified)).setVisibility(View.VISIBLE);
+			(parentActivity.findViewById(R.id.bPay)).setEnabled(true);
+			(parentActivity.findViewById(R.id.bHistory)).setEnabled(true);
+			(parentActivity.findViewById(R.id.bSync)).setEnabled(true);
+			(parentActivity.findViewById(R.id.bOption)).setEnabled(true);
 		}
 	}
     
