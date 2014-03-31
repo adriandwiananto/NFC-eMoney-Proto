@@ -26,7 +26,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class MainActivity extends Activity implements OnClickListener, OnNdefPushCompleteCallback{
+public class MainActivity extends Activity implements OnClickListener{
 
 	private final static String TAG = "{class} MainActivity";
 	private NfcAdapter nfcA;
@@ -95,11 +95,6 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 		String IMEI = T.getDeviceId();
 		lIMEI = Long.parseLong(IMEI);
 		
-    	//disable android beam
-        nfcA.setNdefPushMessage(null, this);
-        //set callback to onNdefPushComplete in this class
-        nfcA.setOnNdefPushCompleteCallback(this, this);
-        
         appdata = new AppData(getApplicationContext());
         Log.d(TAG,"create new AppData class successfully");
         
@@ -199,12 +194,6 @@ public class MainActivity extends Activity implements OnClickListener, OnNdefPus
 				finish();
 				break;
 		}
-	}
-
-	@Override
-	public void onNdefPushComplete(NfcEvent event) {
-		// TODO Auto-generated method stub
-		
 	}
 	
 	private void showWirelessSettingsDialog() {
