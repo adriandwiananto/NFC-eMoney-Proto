@@ -126,16 +126,17 @@ public class Option extends Activity implements OnClickListener{
 				changePassword.start();
 				break;
 			case R.id.bOptionCancel:
-				Intent newIntent = new Intent(this,MainActivity.class);
-				newIntent.putExtra("Password", passExtra);
-				startActivity(newIntent);
-				finish();
+				backToMain();
 				break;
 		}
 	}
 	
 	@Override
 	public void onBackPressed() {
+		backToMain();
+	}
+	
+	private void backToMain(){
 		Intent newIntent = new Intent(this,MainActivity.class);
 		newIntent.putExtra("Password", passExtra);
 		startActivity(newIntent);
@@ -161,4 +162,5 @@ public class Option extends Activity implements OnClickListener{
 			}
 		}
 	};
+	
 }

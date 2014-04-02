@@ -7,6 +7,7 @@ import nfc.emoney.proto.misc.Packet;
 import nfc.emoney.proto.misc.Packet.ParseReceivedPacket;
 import nfc.emoney.proto.userdata.AppData;
 import nfc.emoney.proto.userdata.LogDB;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -20,6 +21,8 @@ import android.nfc.Tag;
 import android.nfc.tech.Ndef;
 import android.nfc.tech.NdefFormatable;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.os.Parcelable;
 import android.util.Log;
 import android.view.View;
@@ -53,6 +56,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	
 	ParseReceivedPacket prp;
 	
+	private String passExtra;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -66,6 +71,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		log_key = myIntent.getByteArrayExtra("logKey");
 		balance_key = myIntent.getByteArrayExtra("balanceKey");
 		merchantDevice = myIntent.getIntExtra("MerchantDevice", 99);
+		passExtra = myIntent.getStringExtra("Password");
 		
 		//UI Init
 		bPay = (Button) findViewById(R.id.bPaySend);
@@ -120,6 +126,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 			prp = new Packet(aes_key).new ParseReceivedPacket(receivedPacket);
 			if(prp.getErrorCode() != 0){
 				Toast.makeText(getApplicationContext(), prp.getErrorMsg(), Toast.LENGTH_LONG).show();
+				Log.d(TAG,"received:"+Converter.byteArrayToHexString(receivedPacket));	
 			} else {
 				sequence = 1;
 				bPay.setEnabled(true);
@@ -167,7 +174,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		switch(v.getId()){
 			case R.id.bPaySend:
 				if(eAmount.getText().toString().length() > 0) {
-					if(eSESN.getText().toString().length() == 3) {
+					if((eSESN.getText().toString().length() == 3) || (merchantDevice == 1)) {
 						InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
 						inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
 					    
@@ -245,17 +252,19 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						eSESN.setVisibility(View.VISIBLE);
 						disableTagWriteMode();
 					}else{
-						finish();
+						backToMain();
 					}
 				} else {
 					if((bPay.isEnabled() == false) && (sequence == 0)){
-						finish();
+						backToMain();
 					} else {
 						tSESN.setText("Waiting for merchant beam...");
+						tSESN.setVisibility(View.VISIBLE);
 						eSESN.setVisibility(View.GONE);
 						eAmount.setVisibility(View.GONE);
 						tAmount.setVisibility(View.GONE);
 						bPay.setEnabled(false);
+						sequence = 0;
 					}
 				}
 				break;
@@ -265,18 +274,10 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	@Override
 	public void onNdefPushComplete(NfcEvent arg0) {
 		// TODO Auto-generated method stub
-		if(merchantDevice == 1){
-			tDebug.setText("beam complete");
-	    	LogDB ldb = new LogDB(this, log_key, prp.getReceivedACCN());
-	    	ldb.insertLastTransToLog(plainTransPacket);
-	    	
-	    	int balanceBefore = appdata.getDecryptedBalance(balance_key);
-	    	int balanceNow = balanceBefore - amountInt;
-	    	appdata.setBalance(balanceNow, balance_key);
-	    	appdata.setLastTransTS(System.currentTimeMillis() / 1000);
-
-	    	Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
-			finish();
+		if((merchantDevice == 1) && (sequence == 1)){
+			nfcAdapter.setNdefPushMessage(null, this);
+			sequence = 2;
+			hand.sendMessage(hand.obtainMessage(2));
 		}
 	}
 	
@@ -329,5 +330,38 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	    } catch (Exception e) {
 	        return false;
 	    }
+	}
+	
+	@SuppressLint("HandlerLeak")
+	Handler hand = new Handler(){
+		public void handleMessage(Message msg){
+			switch (msg.what){
+				case 2:
+					tDebug.setText("beam complete");
+			    	LogDB ldb = new LogDB(Pay.this, log_key, prp.getReceivedACCN());
+			    	ldb.insertLastTransToLog(plainTransPacket);
+			    	
+			    	int balanceBefore = appdata.getDecryptedBalance(balance_key);
+			    	int balanceNow = balanceBefore - amountInt;
+			    	appdata.setBalance(balanceNow, balance_key);
+			    	appdata.setLastTransTS(System.currentTimeMillis() / 1000);
+
+			    	Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
+					finish();
+					break;
+			}
+		}
+	};
+
+	@Override
+	public void onBackPressed() {
+		backToMain();
+	}
+	
+	private void backToMain(){
+		Intent newIntent = new Intent(this,MainActivity.class);
+		newIntent.putExtra("Password", passExtra);
+		startActivity(newIntent);
+		finish();
 	}
 }

@@ -177,6 +177,7 @@ public class MainActivity extends Activity implements OnClickListener{
 						
 						dialog.dismiss();
 						startActivity(payIntent);
+						finish(); //add
 					}
 				});
 				AlertDialog alert = builder.create();
@@ -188,6 +189,7 @@ public class MainActivity extends Activity implements OnClickListener{
 				historyIntent.putExtra("Password", password);
 				historyIntent.putExtra("logKey", log_key);
 				startActivity(historyIntent);
+				finish();
 				break;
 			case R.id.bSync:
 				//new thread

@@ -37,6 +37,7 @@ public class History extends Activity{
 	private List<String[]> colorList;
 	private boolean error;
 	private AppData appdata;
+	private String passExtra;
 	
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +48,7 @@ public class History extends Activity{
         
         Intent myIntent = getIntent();
 		log_key = myIntent.getByteArrayExtra("logKey");
+		passExtra = myIntent.getStringExtra("Password");
 	
 		appdata = new AppData(this);
 		colorList = new LinkedList<String[]>();
@@ -123,6 +125,18 @@ public class History extends Activity{
     	};
     	Thread historyListView = new Thread(runnable);
     	historyListView.start();
+	}
+
+	@Override
+	public void onBackPressed() {
+		backToMain();
+	}
+	
+	private void backToMain(){
+		Intent newIntent = new Intent(this,MainActivity.class);
+		newIntent.putExtra("Password", passExtra);
+		startActivity(newIntent);
+		finish();
 	}
 	
 	@SuppressLint("HandlerLeak")
