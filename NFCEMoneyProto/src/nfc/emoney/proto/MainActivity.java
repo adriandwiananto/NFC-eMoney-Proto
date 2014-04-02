@@ -37,6 +37,9 @@ public class MainActivity extends Activity implements OnClickListener{
 	private KeyDerive key;
 	private byte[] aes_key, keyEncryption_key, log_key, balance_key;
 	
+	String[] merchantDevice =new String[] {"NFC Reader", "NFC Smartphone"};
+	int selectedItem=0;
+	
 	@SuppressLint("HandlerLeak")
 	Handler handler = new Handler() {
 		@Override
@@ -156,12 +159,29 @@ public class MainActivity extends Activity implements OnClickListener{
 		// TODO Auto-generated method stub
 		switch (v.getId()){
 			case R.id.bPay:
-				Intent payIntent = new Intent(this, Pay.class);
-				payIntent.putExtra("Password", password);
-				payIntent.putExtra("aesKey", aes_key);
-				payIntent.putExtra("logKey", log_key);
-				payIntent.putExtra("balanceKey", balance_key);
-				startActivity(payIntent);
+				AlertDialog.Builder builder = new AlertDialog.Builder(this);
+				builder.setTitle("Select Merchant Device");         
+				int selected = selectedItem;         
+				builder.setSingleChoiceItems(merchantDevice, selected, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog,int which) {
+						selectedItem = which;
+						Toast.makeText(MainActivity.this,"Payment mode to "+merchantDevice[selectedItem]+" selected",Toast.LENGTH_SHORT).show();
+
+						Intent payIntent = new Intent(MainActivity.this, Pay.class);
+						payIntent.putExtra("MerchantDevice", selectedItem);
+						payIntent.putExtra("Password", password);
+						payIntent.putExtra("aesKey", aes_key);
+						payIntent.putExtra("logKey", log_key);
+						payIntent.putExtra("balanceKey", balance_key);
+						
+						dialog.dismiss();
+						startActivity(payIntent);
+					}
+				});
+				AlertDialog alert = builder.create();
+				alert.show();
+				
 				break;
 			case R.id.bHistory:
 				Intent historyIntent = new Intent(this, History.class);

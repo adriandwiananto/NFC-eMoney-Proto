@@ -287,7 +287,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 				}
 			}
 			else{
-				error = 4;
+				error = 99;
 				Log.d(TAG,"WTF -- What a Terible Failure. Param_mode not LOG or REG!");
 			}
 			
