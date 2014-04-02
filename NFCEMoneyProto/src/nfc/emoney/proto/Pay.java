@@ -159,7 +159,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 				eSESN.setVisibility(View.VISIBLE);
 				
 				Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
-				finish();
+				backToMain();
 	        } 
 	    }
 	    
@@ -347,7 +347,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 			    	appdata.setLastTransTS(System.currentTimeMillis() / 1000);
 
 			    	Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
-					finish();
+					backToMain();
 					break;
 			}
 		}
