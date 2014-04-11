@@ -1,13 +1,12 @@
 package nfc.emoney.proto;
 
 import java.io.IOException;
-import java.text.NumberFormat;
 import java.util.Arrays;
-import java.util.Locale;
 
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.misc.Packet;
 import nfc.emoney.proto.misc.Packet.ParseReceivedPacket;
+import nfc.emoney.proto.misc.Receipt;
 import nfc.emoney.proto.userdata.AppData;
 import nfc.emoney.proto.userdata.LogDB;
 import nfc.emoney.proto.userdata.LogDB.LogOperation;
@@ -593,13 +592,23 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
         }
         
         //PRINT PDF IN HERE!!!
+        Receipt rcp = new Receipt(Pay.this, Converter.byteArrayToLong(prp.getReceivedTS()), 
+					        		Converter.byteArrayToLong(prp.getReceivedACCN()), appdata.getACCN(), 
+					        		Converter.byteArrayToInteger(prp.getReceivedAMNT()));
+        
+        String dialogMsg;
+        if(rcp.writeReceiptPdfToFile()){
+        	dialogMsg = "Receipt received!\n"+
+					"Amount Sent: "+Converter.longToRupiah(Converter.byteArrayToLong(prp.getReceivedAMNT()))+"\n"+
+					"Merchant ID: "+Converter.byteArrayToLong(prp.getReceivedACCN()); 
+        } else {
+        	dialogMsg = "Fail to write to external storage";
+        }
         
         //popup notification
     	new AlertDialog.Builder(this)
 		.setTitle("Notification")
-		.setMessage("Receipt received!\n"+
-					"Amount Sent: "+Converter.longToRupiah(Converter.byteArrayToLong(prp.getReceivedAMNT()))+"\n"+
-					"Merchant ID: "+Converter.byteArrayToLong(prp.getReceivedACCN()))
+		.setMessage(dialogMsg)
 		.setNeutralButton("OK", new DialogInterface.OnClickListener()
 		{
 		    @Override

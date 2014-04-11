@@ -1,9 +1,5 @@
 package nfc.emoney.proto;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
-
 import nfc.emoney.proto.crypto.Hash;
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
@@ -37,8 +33,6 @@ public class Login extends Activity implements OnClickListener {
 		appdata = new AppData(this);
 		
 		//debugging purpose
-		Date d = new Date(appdata.getLATS()*1000);
-		SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US);
 		Log.d(TAG,"Write debug textview!");
 		loginDebug = (TextView)findViewById(R.id.tLoginDebug);
 		loginDebug.setText("ACCN : "+String.valueOf(appdata.getACCN()));
@@ -46,7 +40,7 @@ public class Login extends Activity implements OnClickListener {
 		loginDebug.append("\nPassword : "+appdata.getPass());
 		loginDebug.append("\nBalance : "+appdata.getBalance());
 		loginDebug.append("\nLast Sync : "+String.valueOf(appdata.getLATS()));
-		loginDebug.append("\nLast Sync(Readable) : "+ df.format(d));
+		loginDebug.append("\nLast Sync(Readable) : "+ Converter.timestampToReadable(appdata.getLATS()));
 		Log.d(TAG,"key:"+appdata.getEncryptedKey());
 		loginDebug.append("\nWrapped Key+Iv : "+ appdata.getEncryptedKey());
 		

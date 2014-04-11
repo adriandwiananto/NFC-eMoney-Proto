@@ -1,11 +1,8 @@
 package nfc.emoney.proto;
 
-import java.sql.Date;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.userdata.AppData;
@@ -120,16 +117,14 @@ public class History extends Activity{
     					}
     					
     					//create simple date format of log timestamp
-    					Date d = new Date(Converter.byteArrayToLong(TS)*1000);
-    					SimpleDateFormat df = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.US);
-    					Log.d(TAG,"timestamp: "+df.format(d));
+    					Log.d(TAG,"timestamp: "+Converter.timestampToReadable(Converter.byteArrayToLong(TS)));
 
     					//if ACCN-M is empty, write only amount and date
     					//if ACCN-M is NOT empty, write amount, ACCN-M, and date
     					if(Converter.byteArrayToLong(accnM) == 0){
-    						colorList.add(new String[]{String.valueOf(Converter.byteArrayToInteger(amnt)), df.format(d)});
+    						colorList.add(new String[]{String.valueOf(Converter.byteArrayToInteger(amnt)), Converter.timestampToReadable(Converter.byteArrayToLong(TS))});
     					} else {
-    						colorList.add(new String[]{String.valueOf(Converter.byteArrayToInteger(amnt)), String.valueOf(Converter.byteArrayToLong(accnM))+"\n"+df.format(d)});
+    						colorList.add(new String[]{String.valueOf(Converter.byteArrayToInteger(amnt)), String.valueOf(Converter.byteArrayToLong(accnM))+"\n"+Converter.timestampToReadable(Converter.byteArrayToLong(TS))});
     					}
     					
     					cur.moveToNext();
