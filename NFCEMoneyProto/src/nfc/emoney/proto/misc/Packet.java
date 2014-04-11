@@ -47,7 +47,6 @@ public class Packet {
 	 * @param aes_key
 	 */
 	public Packet(int amount, int sesn, long accn, long lastTS, byte[] aes_key) {
-		// TODO Auto-generated constructor stub
 		Amount = amount;
 		SESN = sesn;
 		ACCN = accn;
@@ -66,7 +65,6 @@ public class Packet {
 	 * @param aes_key
 	 */
 	public Packet(int amount, int sesn, int timestamp, long accn, long lastTS, byte[] aes_key) {
-		// TODO Auto-generated constructor stub
 		Amount = amount;
 		SESN = sesn;
 		ACCN = accn;
@@ -81,7 +79,6 @@ public class Packet {
 	 * @return transaction data packet
 	 */
 	public byte[] buildTransPacket() {
-		// TODO Auto-generated method stub
 		int intAmount = Amount;
 		int intSESN = SESN;
 		long longACCN = ACCN;
@@ -123,7 +120,6 @@ public class Packet {
 			ciphertext = AES256cipher.encrypt(randomIV, keyAES, encAES);
 			cipherPayload = ciphertext;
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 		
@@ -131,7 +127,6 @@ public class Packet {
 		try {
 			decryptedCiphertext = AES256cipher.decrypt(randomIV, keyAES, ciphertext);
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} 
 		

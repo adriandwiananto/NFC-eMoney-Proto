@@ -9,24 +9,38 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".MainActivity" >
 
-    <ProgressBar
-        android:id="@+id/pMain"
+    <TextView
+        android:id="@+id/tMainSaldoLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|center"
         android:paddingTop="@dimen/first_top_margin_in_activity"
-        android:visibility="visible" />
+        android:text="@string/tMainSaldoLabel" />
 
     <TextView
         android:id="@+id/tMainBalanceUnverified"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="bottom|center"
-        android:paddingTop="@dimen/first_top_margin_in_activity"
+        android:paddingTop="@dimen/top_margin_between_row_in_activity"
         android:text="@string/tSaldo"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textSize="@dimen/tSaldoSize"
+        android:textSize="@dimen/tSaldoSize" 
         android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/tMainBalanceVerified"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/top_margin_between_row_in_activity"
+        android:text="@string/tMainBalanceVerified"
+        android:visibility="gone" />
+
+    <ProgressBar
+        android:id="@+id/pMain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:paddingTop="@dimen/top_margin_between_row_in_activity" />
 
     <LinearLayout
         android:layout_width="match_parent"

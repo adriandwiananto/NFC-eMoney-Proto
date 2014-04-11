@@ -28,5 +28,8 @@
     <string name="bLoginCancel">Cancel</string>
     <string name="tMainDebug">Waiting debug result</string>
     <string name="tHistoryError">Failed to load log history!\nChange in App Data is forbidden and irreversible!</string>
+    <string name="tMainSaldoLabel">Saldo :</string>
+    <string name="tMainBalanceVerified">BV</string>
+    <string name="tPayWaitReceipt">Transaction Success!!\n\nTap merchant device to get receipt\nPress Finish to finish transaction without receiving transaction receipt</string>
 
 </resources>

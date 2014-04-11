@@ -26,6 +26,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class History extends Activity{
 	private final static String TAG = "{class} History";
@@ -52,6 +53,11 @@ public class History extends Activity{
 		passExtra = myIntent.getStringExtra("Password");
 	
 		appdata = new AppData(this);
+		if(appdata.getError() == true){
+			Toast.makeText(this, "APPDATA ERROR!", Toast.LENGTH_LONG).show();
+			finish();
+		}
+		
 		colorList = new LinkedList<String[]>();
 		
 		//UI purpose

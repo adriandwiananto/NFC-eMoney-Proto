@@ -2,9 +2,11 @@ package nfc.emoney.proto.misc;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import nfc.emoney.proto.Login;
 import nfc.emoney.proto.R;
@@ -390,8 +392,10 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			
 			//change in UI
 			(parentActivity.findViewById(R.id.pMain)).setVisibility(View.GONE);
-			((TextView) parentActivity.findViewById(R.id.tMainBalanceUnverified)).setText(String.valueOf(appdata.getDecryptedBalance(balance_key)));
+			((TextView) parentActivity.findViewById(R.id.tMainBalanceUnverified)).setText(Converter.longToRupiah(appdata.getDecryptedBalance(balance_key)));
 			(parentActivity.findViewById(R.id.tMainBalanceUnverified)).setVisibility(View.VISIBLE);
+			((TextView) parentActivity.findViewById(R.id.tMainBalanceVerified)).setText("Verified: "+Converter.longToRupiah(appdata.getDecryptedVerifiedBalance(balance_key)));
+			(parentActivity.findViewById(R.id.tMainBalanceVerified)).setVisibility(View.VISIBLE);
 			(parentActivity.findViewById(R.id.bPay)).setEnabled(true);
 			(parentActivity.findViewById(R.id.bHistory)).setEnabled(true);
 			(parentActivity.findViewById(R.id.bSync)).setEnabled(true);

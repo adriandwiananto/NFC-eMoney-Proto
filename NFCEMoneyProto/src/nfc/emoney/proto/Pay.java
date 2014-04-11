@@ -1,18 +1,25 @@
 package nfc.emoney.proto;
 
 import java.io.IOException;
+import java.text.NumberFormat;
+import java.util.Arrays;
+import java.util.Locale;
 
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.misc.Packet;
 import nfc.emoney.proto.misc.Packet.ParseReceivedPacket;
 import nfc.emoney.proto.userdata.AppData;
 import nfc.emoney.proto.userdata.LogDB;
+import nfc.emoney.proto.userdata.LogDB.LogOperation;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.nfc.NdefMessage;
 import android.nfc.NfcAdapter;
 import android.nfc.NfcAdapter.OnNdefPushCompleteCallback;
@@ -36,6 +43,7 @@ import android.widget.Toast;
 public class Pay extends Activity implements OnClickListener , OnNdefPushCompleteCallback {
 
 	private final static String TAG = "{class} Pay";
+	private static final boolean debugTextViewVisibility = false;
 	private NfcAdapter nfcAdapter;
 	boolean mWriteMode = false;
 	private PendingIntent mNfcPendingIntent;
@@ -44,7 +52,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	private AppData appdata;
 	Button bPay, bCancel;
 	EditText eSESN, eAmount;
-	TextView tDebug, tAmount, tSESN;
+	TextView tDebug, tAmount, tSESN, tReceipt;
 	private byte[] aes_key, log_key, balance_key;
 	private byte[] plainTransPacket;
 	
@@ -53,6 +61,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	private int amountInt;
 	
 	private int sequence;
+	
+	private long logRowNumber = 0;
 	
 	ParseReceivedPacket prp;
 	
@@ -63,17 +73,21 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.pay);
 
-		//sequence 0 means initial condition
 		//if merchant device nfc reader:
-		//	sequence 0 - payer expected to send transaction data to merchant
-		//	sequence 1 - merchant expected to send receipt to payer (not yet implemented)
+		//	sequence 0 - expected to send transaction data to merchant
+		//	sequence 1 - waiting for receipt
 		//if merchant device nfc phone:
-		//	sequence 0 - merchant expected to send transaction request to payer
-		//	sequence 1 - payer expected to send transaction data to merchant
-		//	sequence 2 - merchant expected to send transaction cancelation (optional, not yet implemented)
+		//	sequence 0 - waiting for merchant request
+		//	sequence 1 - accepted merchant request, expected to send transaction data to merchant
+		//	sequence 2 - successfully pushing transaction data to merchant, waiting for receipt
 		sequence = 0;
 		
 		appdata = new AppData(getApplicationContext());
+		if(appdata.getError() == true){
+			Toast.makeText(this, "APPDATA ERROR!", Toast.LENGTH_LONG).show();
+			finish();
+		}
+		
 		Intent myIntent = getIntent();
 		aes_key = myIntent.getByteArrayExtra("aesKey");
 		log_key = myIntent.getByteArrayExtra("logKey");
@@ -91,6 +105,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		tDebug = (TextView)findViewById(R.id.tPayDebug);
 		tAmount = (TextView)findViewById(R.id.tPayAmount);
 		tSESN = (TextView)findViewById(R.id.tPaySESN);
+		tReceipt = (TextView)findViewById(R.id.tPayWaitReceipt);
 		
 		if(merchantDevice == 1){
 			//UI init for NFC phone merchant device
@@ -115,8 +130,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	@Override
     public void onResume(){
     	super.onResume();
+    	Log.d(TAG,"onResume");
     	if(merchantDevice == 1){
-    		//called when device receive NFC intent
 	    	nfcAdapter.enableForegroundDispatch(this, mNfcPendingIntent, null, null);
 	    	if (NfcAdapter.ACTION_NDEF_DISCOVERED.equals(getIntent().getAction())) processIntent(getIntent());
     	}
@@ -143,31 +158,58 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 			prp = new Packet(aes_key).new ParseReceivedPacket(receivedPacket);
 			if(prp.getErrorCode() != 0){
 				Toast.makeText(getApplicationContext(), prp.getErrorMsg(), Toast.LENGTH_LONG).show();
-				Log.d(TAG,"received:"+Converter.byteArrayToHexString(receivedPacket));	
-			} else {
-				//if parse return no error, change sequence to 1
-				//UI change, user need to input amount before sending transaction data to merchant NFC phone
-				sequence = 1;
-				bPay.setEnabled(true);
-				tSESN.setVisibility(View.GONE);
-				tAmount.setVisibility(View.VISIBLE);
-				eAmount.setVisibility(View.VISIBLE);
+				return;
+			}
+
+			//if parse return no error
+			if(merchantDevice == 1){
+				if(sequence == 0){
+					//change sequence to 1
+					//UI change, user need to input amount before sending transaction data to merchant NFC phone
+					sequence = 1;
+					bPay.setEnabled(true);
+					tSESN.setVisibility(View.GONE);
+					tAmount.setVisibility(View.VISIBLE);
+					eAmount.setVisibility(View.VISIBLE);
+					
+				} else if(sequence == 2) {
+	    	        if(processReceipt() == false){
+						Toast.makeText(this, "Wrong receipt sent by merchant's NFC phone!", Toast.LENGTH_LONG).show();
+						return;
+					}
+				}
+			} else { //merchantDevice == 0
+				if(sequence == 1){
+					if(processReceipt() == false){
+						Toast.makeText(this, "Wrong receipt sent by merchant's NFC reader!", Toast.LENGTH_LONG).show();
+						return;
+					}
+				}
 			}
         }
 	}
 
 	@Override
     public void onNewIntent(Intent intent) {
-	    if ((merchantDevice == 0) && mWriteMode && NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
+    	Log.d(TAG,"onNewIntent");
+    	Log.d(TAG,"intent: "+intent.getAction());
+    	Log.d(TAG,"merchant device: "+merchantDevice+"\nsequence: "+sequence);
+    	
+    	if ((merchantDevice == 0) && (sequence == 0) && mWriteMode && 
+    			NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
+        	Log.d(TAG,"tag discovered");
+    		
 			// if merchant device is NFC reader, and write mode is enabled, and new NFC TAG is discovered
 	    	Tag detectedTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 	    	
-	    	//write NDEF message toSend to NFC TAG
-	        if (writeTag(toSend, detectedTag)) {
+	    	if(writeTag(toSend, detectedTag)) {
+		    	//write NDEF message toSend to NFC TAG
+	        	sequence = 1;
+	        	
 	        	//if write success (== transaction success),
 	        	//insert transaction data to log
 	        	LogDB ldb = new LogDB(this, log_key);
-	        	ldb.insertLastTransToLog(plainTransPacket);
+	        	logRowNumber = ldb.insertLastTransToLog(plainTransPacket);
 	        	
 	        	//update balance (only unverified balance)
 	        	//update last transaction timestamp
@@ -185,21 +227,35 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 				Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
 				
 				//close pay activity and open main activity
-				backToMain();
-	        } 
-	    }
-	    
+				//backToMain();
+				
+				//UI purpose
+		    	tAmount.setVisibility(View.GONE);
+		    	eAmount.setVisibility(View.GONE);
+		    	tSESN.setVisibility(View.GONE);
+		    	eSESN.setVisibility(View.GONE);
+		    	bPay.setVisibility(View.GONE);
+		    	tReceipt.setVisibility(View.VISIBLE);
+		    	bCancel.setText("Finish");
+	    	}
+	    } else if ((merchantDevice == 0) && (sequence == 1) && 
+		    			(NfcAdapter.ACTION_NDEF_DISCOVERED.equals(intent.getAction()) || 
+		    					NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction()))) {
+	    	//Use ELSE IF. IF will cause exception thrown. After writing tag, sequence is changed to 1. 
+	    	//If IF is used, this condition will be fulfilled and processIntent will throw exception.
+    		Log.d(TAG,"NDEF discovered");
+    		processIntent(intent);
+    	}
+    	
 	    if(merchantDevice == 1){
 	    	setIntent(intent);
 	    }
     }
-	
+
 	@Override
 	public void onClick(View v) {
-		// TODO Auto-generated method stub
 		switch(v.getId()){
 			case R.id.bPaySend:
-
 				//make sure amount is not 0
 				if(eAmount.getText().toString().length() > 0) {
 
@@ -211,8 +267,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
 						inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
 					    
-//						nfcAdapter = NfcAdapter.getDefaultAdapter(this);
-//						mNfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(Pay.this, Pay.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
+						//nfcAdapter = NfcAdapter.getDefaultAdapter(this);
+						//mNfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(Pay.this, Pay.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 						
 						//get amount from edit text
 						//get accn and last transaction timestamp from appdata
@@ -221,7 +277,14 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						long accnLong = appdata.getACCN();
 						long lastTS = appdata.getLastTransTS();
 						
-						if(merchantDevice == 0){
+						//check if transaction amount < unverified balance
+						boolean proceedTrans = false;
+						int amountRemaining = appdata.getDecryptedBalance(balance_key) - amountInt;
+						if(amountRemaining >= 0){
+							proceedTrans = true;
+						}
+						
+						if((merchantDevice == 0) && (proceedTrans == true)){
 							//if merchant device is NFC reader
 							//get SESN from edit text
 							String SESN = eSESN.getText().toString();
@@ -243,7 +306,11 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							tDebug.append("\nPlain payload:\n"+Converter.byteArrayToHexString(plainPayload));
 							tDebug.append("\nCiphered payload:\n"+Converter.byteArrayToHexString(packet.getCipherPayload()));
 							tDebug.append("\naes key:\n"+Converter.byteArrayToHexString(aes_key));
-							tDebug.setVisibility(View.VISIBLE);
+							if(debugTextViewVisibility) {
+					        	tDebug.setVisibility(View.VISIBLE);
+					        } else {
+					        	tDebug.setVisibility(View.GONE);
+					        }
 
 							//enable tag write mode
 							enableTagWriteMode();
@@ -252,9 +319,10 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							bPay.setEnabled(false);			
 							eAmount.setVisibility(View.GONE);
 							eSESN.setVisibility(View.GONE);
-							tAmount.append(" "+amount);
+							//tAmount.append(" "+amount);
+							tAmount.append(" "+Converter.longToRupiah(amountInt));
 							tSESN.append(" "+SESN);
-						} else if(merchantDevice == 1) {
+						} else if((merchantDevice == 1) && (proceedTrans == true)) {
 
 							//build transaction data packet
 							//Use SESN and timestamp from merchant request
@@ -277,11 +345,19 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							tDebug.append("\nPlain payload:\n"+Converter.byteArrayToHexString(plainPayload));
 							tDebug.append("\nCiphered payload:\n"+Converter.byteArrayToHexString(packet.getCipherPayload()));
 							tDebug.append("\naes key:\n"+Converter.byteArrayToHexString(aes_key));
-							tDebug.setVisibility(View.VISIBLE);
+							if(debugTextViewVisibility) {
+					        	tDebug.setVisibility(View.VISIBLE);
+					        } else {
+					        	tDebug.setVisibility(View.GONE);
+					        }
 							
 							//UI purpose
 							bPay.setEnabled(false);			
-							tAmount.append(" "+amount);
+							//tAmount.append(" "+amount);
+							tAmount.append(" "+Converter.longToRupiah(amountInt));
+							eAmount.setVisibility(View.GONE);
+						} else { //proceedTrans == false
+							Toast.makeText(this, "Insufficient balance!", Toast.LENGTH_LONG).show();
 						}
 					} else {
 						Toast.makeText(getApplicationContext(), "fill SESN between 100-999", Toast.LENGTH_LONG).show();					
@@ -290,9 +366,11 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 					Toast.makeText(getApplicationContext(), "fill amount ( < 1.000.000 )", Toast.LENGTH_LONG).show();
 				}
 				break;
+				
 			case R.id.bPayCancel:
 				if(merchantDevice == 0){
-					if(bPay.isEnabled() == false){
+					//if(bPay.isEnabled() == false){
+					if((sequence == 0) && (bPay.isEnabled() == false)){
 						//if user already pressed Pay and haven't tap the phone to NFC reader
 						//disable tag write mode and user can change SESN / amount
 						bPay.setEnabled(true);
@@ -307,18 +385,23 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						backToMain();
 					}
 				} else {
-					if((bPay.isEnabled() == false) && (sequence == 0)){
-						//if user haven't received merchant request NFC data, 
+					//if((bPay.isEnabled() == false) && (sequence == 0)){
+					if((sequence == 0) || (sequence == 2)) {
+						//if user haven't received merchant request NFC data, (sequence = 0) 
+						//cancel will close pay activity and open main activity
+						
+						//if user press finish in waiting for receipt (sequence = 2)
 						//cancel will close pay activity and open main activity
 						backToMain();
 					} else {
-						//if user already received merchant request,
-						//cancel will bring Pay activity to it's initial state (sequence 0, waiting merchant request)
+						//if user already received merchant request, (sequence = 1)
+						//cancel will bring Pay activity to it's initial state (sequence = 0)
 						tSESN.setText("Waiting for merchant beam...");
 						tSESN.setVisibility(View.VISIBLE);
 						eSESN.setVisibility(View.GONE);
 						eAmount.setVisibility(View.GONE);
 						tAmount.setVisibility(View.GONE);
+						tAmount.setText(this.getString(R.string.tPayAmount));
 						bPay.setEnabled(false);
 						sequence = 0;
 					}
@@ -337,7 +420,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 			//call handler with message = 2
 			nfcAdapter.setNdefPushMessage(null, this);
 			sequence = 2;
-			hand.sendMessage(hand.obtainMessage(2));
+			hand.sendMessage(hand.obtainMessage(1));
 		}
 	}
 	
@@ -409,13 +492,13 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	Handler hand = new Handler(){
 		public void handleMessage(Message msg){
 			switch (msg.what){
-				case 2:
+				case 1:
 					//successfully push transaction data to merchant NFC phone
+					tDebug.setText("beam complete");
 					
 					//insert last transaction to log
-					tDebug.setText("beam complete");
 			    	LogDB ldb = new LogDB(Pay.this, log_key, prp.getReceivedACCN());
-			    	ldb.insertLastTransToLog(plainTransPacket);
+			    	logRowNumber = ldb.insertLastTransToLog(plainTransPacket);
 			    	
 			    	//update new balance to appdata (only unverified balance)
 			    	//update last transaction timestamp in appdata
@@ -428,7 +511,14 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 			    	Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
 			    	
 			    	//close this activity and open main activity
-					backToMain();
+					//backToMain();
+			    	
+			    	//UI purpose
+			    	tAmount.setVisibility(View.GONE);
+			    	eAmount.setVisibility(View.GONE);
+			    	bPay.setVisibility(View.GONE);
+			    	tReceipt.setVisibility(View.VISIBLE);
+			    	bCancel.setText("Finish");
 					break;
 			}
 		}
@@ -445,5 +535,80 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		newIntent.putExtra("Password", passExtra);
 		startActivity(newIntent);
 		finish();
+	}
+	
+	private boolean processReceipt(){
+		byte[] sentSesnHeader = Arrays.copyOfRange(plainTransPacket, 3, 5);
+		byte[] sentTimestamp = Arrays.copyOfRange(plainTransPacket, 13, 17);
+		byte[] sentAmount = Arrays.copyOfRange(plainTransPacket, 17, 21);
+		byte[] sentLastTransTimestamp = Arrays.copyOfRange(plainTransPacket, 21, 25);
+		byte[] sentSesnPayload = Arrays.copyOfRange(plainTransPacket, 25, 27);
+		
+		LogDB db = new LogDB(this, log_key);
+		LogOperation lo = db.new LogOperation();
+        Cursor cur = db.getLogBlob();
+        //cur.move((int)logRowNumber);
+        cur.moveToPosition((int)logRowNumber-1);
+        byte[] thisTransLog = lo.getDecrpytedLogPerRow(cur);
+        byte[] accnmInLog = Arrays.copyOfRange(thisTransLog, 8, 14);
+        byte[] amountInLog = Arrays.copyOfRange(thisTransLog, 20, 24);
+        byte[] timestampInLog = Arrays.copyOfRange(thisTransLog, 24, 28);
+		
+		//check if received receipt is same with transaction data sent to merchant
+		//check if received receipt is same with transaction data saved in log db
+		if(Arrays.equals(prp.getReceivedSESN(), sentSesnHeader) == false){
+			return false;
+		}
+		if(Arrays.equals(prp.getReceivedSESN(), sentSesnPayload) == false){
+			return false;
+		}
+		if(Arrays.equals(prp.getReceivedTS(), sentTimestamp) == false){
+			return false;
+		}
+		if(Arrays.equals(prp.getReceivedAMNT(), sentAmount) == false){
+			return false;
+		}
+		if(Arrays.equals(prp.getReceivedLATS(), sentLastTransTimestamp) == false){
+			return false;
+		}
+        if(merchantDevice == 1){
+        	if(Arrays.equals(prp.getReceivedACCN(), accnmInLog) == false){
+	        	//if merchant device is nfc reader, skip this check
+	        	return false;
+        	}
+    	}
+        if(Arrays.equals(prp.getReceivedAMNT(), amountInLog) == false){
+        	return false;
+        }
+        if(Arrays.equals(prp.getReceivedTS(), timestampInLog) == false){
+        	return false;
+        }
+        
+        //receipt valid
+        
+        if(merchantDevice == 0){
+	        //if merchant is nfc reader, write ACCN from receipt to log
+	        System.arraycopy(prp.getReceivedACCN(), 0, thisTransLog, 8, 6);
+	        db.insertTransToLog(logRowNumber, thisTransLog);
+        }
+        
+        //PRINT PDF IN HERE!!!
+        
+        //popup notification
+    	new AlertDialog.Builder(this)
+		.setTitle("Notification")
+		.setMessage("Receipt received!\n"+
+					"Amount Sent: "+Converter.longToRupiah(Converter.byteArrayToLong(prp.getReceivedAMNT()))+"\n"+
+					"Merchant ID: "+Converter.byteArrayToLong(prp.getReceivedACCN()))
+		.setNeutralButton("OK", new DialogInterface.OnClickListener()
+		{
+		    @Override
+		    public void onClick(DialogInterface dialog, int which) {
+		    	backToMain();
+		    }
+		})
+		.show();
+    	
+        return true;
 	}
 }

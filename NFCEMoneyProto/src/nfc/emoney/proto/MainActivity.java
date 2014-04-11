@@ -1,5 +1,8 @@
 package nfc.emoney.proto;
 
+import java.text.NumberFormat;
+import java.util.Locale;
+
 import nfc.emoney.proto.crypto.KeyDerive;
 import nfc.emoney.proto.misc.Converter;
 import nfc.emoney.proto.misc.Network;
@@ -27,9 +30,11 @@ import android.widget.Toast;
 public class MainActivity extends Activity implements OnClickListener{
 
 	private final static String TAG = "{class} MainActivity";
+	private static final boolean debugTextViewVisibility = false;
+	
 	private NfcAdapter nfcA;
 	private AppData appdata;
-	TextView balance,debug;
+	TextView balance,balanceVerified,debug;
 	ProgressBar balanceLoading;
 	Button bPay,bHistory,bSync,bOption;
 	private String password;
@@ -46,11 +51,15 @@ public class MainActivity extends Activity implements OnClickListener{
 		public void handleMessage(Message msg) {
 			//bellow code will be executed after derive key thread finish
 			Bundle bundle = msg.getData();
-			String stringFromMsg = bundle.getString("Balance");
+			int balanceFromMsg = bundle.getInt("Balance", 0);
+			int balanceVerifiedFromMsg = bundle.getInt("BalanceVerified", 0);
+			
 			//UI modification
-			balance.setText(stringFromMsg);
-			balanceLoading.setVisibility(View.GONE);
+			balance.setText(Converter.longToRupiah(balanceFromMsg));
 			balance.setVisibility(View.VISIBLE);
+			balanceVerified.setText("Verified: "+Converter.longToRupiah(balanceVerifiedFromMsg));
+			balanceVerified.setVisibility(View.VISIBLE);
+			balanceLoading.setVisibility(View.GONE);
 			bPay.setEnabled(true);
 			bHistory.setEnabled(true);
 			bSync.setEnabled(true);
@@ -60,6 +69,11 @@ public class MainActivity extends Activity implements OnClickListener{
 			debug.append("\nBalance Key:\n"+Converter.byteArrayToHexString(key.getBalanceKey()));
 			debug.append("\nLog Key:\n"+Converter.byteArrayToHexString(key.getLogKey()));
 			debug.append("\nTransaction Key:\n"+Converter.byteArrayToHexString(appdata.getDecryptedKey(key.getKeyEncryptionKey())));
+			if(debugTextViewVisibility) {
+	        	debug.setVisibility(View.VISIBLE);
+	        } else {
+	        	debug.setVisibility(View.GONE);
+	        }
 		}
 	};
 		 
@@ -78,6 +92,7 @@ public class MainActivity extends Activity implements OnClickListener{
     	
     	//UI Initialization
     	balance = (TextView)findViewById(R.id.tMainBalanceUnverified);
+    	balanceVerified = (TextView)findViewById(R.id.tMainBalanceVerified);
     	debug = (TextView)findViewById(R.id.tMainDebug);
     	balanceLoading = (ProgressBar)findViewById(R.id.pMain);
         bPay = (Button) findViewById(R.id.bPay);
@@ -93,6 +108,12 @@ public class MainActivity extends Activity implements OnClickListener{
         bOption.setOnClickListener(this);
         bOption.setEnabled(false);
         
+        if(debugTextViewVisibility) {
+        	debug.setVisibility(View.VISIBLE);
+        } else {
+        	debug.setVisibility(View.GONE);
+        }
+        
         //get device IMEI
     	TelephonyManager T = (TelephonyManager)getApplicationContext().getSystemService(Context.TELEPHONY_SERVICE);
 		String IMEI = T.getDeviceId();
@@ -100,6 +121,10 @@ public class MainActivity extends Activity implements OnClickListener{
 		
         appdata = new AppData(getApplicationContext());
         Log.d(TAG,"create new AppData class successfully");
+        if(appdata.getError() == true){
+			Toast.makeText(this, "APPDATA ERROR!", Toast.LENGTH_LONG).show();
+			finish();
+		}
         
         //if ACCN empty, open register activity and close main activity
         if(appdata.getACCN() == 0){
@@ -135,13 +160,15 @@ public class MainActivity extends Activity implements OnClickListener{
 	        			Message msg = handler.obtainMessage();
 	        			key.deriveKey(password, String.valueOf(lIMEI));
 	        			int decryptedBalance = appdata.getDecryptedBalance(key.getBalanceKey());
+	        			int decryptedBalanceVerified = appdata.getDecryptedVerifiedBalance(key.getBalanceKey());
 	        			keyEncryption_key = key.getKeyEncryptionKey();
 	        			aes_key = appdata.getDecryptedKey(keyEncryption_key);
 	        			log_key = key.getLogKey();
 	        			balance_key = key.getBalanceKey();
 	        			
 	        			Bundle bundle = new Bundle();
-	        			bundle.putString("Balance", String.valueOf(decryptedBalance));
+	        			bundle.putInt("Balance", decryptedBalance);
+	        			bundle.putInt("BalanceVerified", decryptedBalanceVerified);
 	        			msg.setData(bundle);
 	        			handler.sendMessage(msg);
 	        		}
@@ -165,7 +192,6 @@ public class MainActivity extends Activity implements OnClickListener{
 	
 	@Override
 	public void onClick(View v) {
-		// TODO Auto-generated method stub
 		switch (v.getId()){
 			case R.id.bPay:
 				//user tap pay mode. prompt user whether to make payment to nfc reader or nfc phone
@@ -212,6 +238,7 @@ public class MainActivity extends Activity implements OnClickListener{
 				//disable all button, show progress bar, hide balance
 				balanceLoading.setVisibility(View.VISIBLE);
 				balance.setVisibility(View.GONE);
+				balanceVerified.setVisibility(View.GONE);
 				bPay.setEnabled(false);
 				bHistory.setEnabled(false);
 				bSync.setEnabled(false);

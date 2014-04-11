@@ -37,6 +37,7 @@
                 <action android:name="android.nfc.action.NDEF_DISCOVERED" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="emoney/merchantRequest"/>
+                <data android:mimeType="emoney/merchantReceipt"/>
             </intent-filter>
 		</activity>
         <activity 
