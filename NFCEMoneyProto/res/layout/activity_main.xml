@@ -81,6 +81,13 @@
             android:text="@string/bOption" />
     </LinearLayout>
 
+    <Button
+        android:id="@+id/bAbsen"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/top_margin_between_row_in_activity"
+        android:text="@string/bAbsen" />
+    
     <TextView
         android:id="@+id/tMainDebug"
         android:layout_width="wrap_content"

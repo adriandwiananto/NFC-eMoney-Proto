@@ -36,7 +36,7 @@ public class MainActivity extends Activity implements OnClickListener{
 	private AppData appdata;
 	TextView balance,balanceVerified,debug;
 	ProgressBar balanceLoading;
-	Button bPay,bHistory,bSync,bOption;
+	Button bPay,bHistory,bSync,bOption,bAbsen;
 	private String password;
 	private long lIMEI;
 	private KeyDerive key;
@@ -64,6 +64,7 @@ public class MainActivity extends Activity implements OnClickListener{
 			bHistory.setEnabled(true);
 			bSync.setEnabled(true);
 			bOption.setEnabled(true);
+			bAbsen.setEnabled(true);
 			
 			debug.setText("KEK:\n"+Converter.byteArrayToHexString(key.getKeyEncryptionKey()));
 			debug.append("\nBalance Key:\n"+Converter.byteArrayToHexString(key.getBalanceKey()));
@@ -107,6 +108,9 @@ public class MainActivity extends Activity implements OnClickListener{
         bOption = (Button) findViewById(R.id.bOption);
         bOption.setOnClickListener(this);
         bOption.setEnabled(false);
+        bAbsen = (Button) findViewById(R.id.bAbsen);
+        bAbsen.setOnClickListener(this);
+        bAbsen.setEnabled(false);
         
         if(debugTextViewVisibility) {
         	debug.setVisibility(View.VISIBLE);
@@ -243,6 +247,7 @@ public class MainActivity extends Activity implements OnClickListener{
 				bHistory.setEnabled(false);
 				bSync.setEnabled(false);
 				bOption.setEnabled(false);
+				bAbsen.setEnabled(false);
 				
 				//do sync in separate thread
 				Network sync = new Network(MainActivity.this, getApplicationContext(), keyEncryption_key, log_key, balance_key);
@@ -257,6 +262,12 @@ public class MainActivity extends Activity implements OnClickListener{
 				optionIntent.putExtra("logKey", log_key);
 				optionIntent.putExtra("balanceKey", balance_key);
 				startActivity(optionIntent);
+				finish();
+				break;
+			case R.id.bAbsen:
+				Intent absenIntent = new Intent(this, Absen.class);
+				absenIntent.putExtra("Password", password);
+				startActivity(absenIntent);
 				finish();
 				break;
 		}

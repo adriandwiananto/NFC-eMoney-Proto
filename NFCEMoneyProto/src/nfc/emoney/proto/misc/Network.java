@@ -357,7 +357,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			// error occured
 			error = 1;
 			Log.d(TAG,"Response is empty JSON Object");
-			appdata.deleteAppData();
+			//appdata.deleteAppData();
 		}
 		
 		
@@ -400,6 +400,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			(parentActivity.findViewById(R.id.bHistory)).setEnabled(true);
 			(parentActivity.findViewById(R.id.bSync)).setEnabled(true);
 			(parentActivity.findViewById(R.id.bOption)).setEnabled(true);
+			(parentActivity.findViewById(R.id.bAbsen)).setEnabled(true);
 		}
 	}
 }

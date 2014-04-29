@@ -75,6 +75,13 @@ public class Packet {
 	}
 
 	/**
+	 * USE THIS CONSTRUCTOR TO CONVERT ABSEN DATA PACKET TO NDEF 
+	 */
+	public Packet() {
+		// TODO Auto-generated constructor stub
+	}
+
+	/**
 	 * method for building transaction data packet
 	 * @return transaction data packet
 	 */

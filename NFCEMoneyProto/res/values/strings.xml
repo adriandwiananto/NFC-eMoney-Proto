@@ -31,5 +31,9 @@
     <string name="tMainSaldoLabel">Saldo :</string>
     <string name="tMainBalanceVerified">BV</string>
     <string name="tPayWaitReceipt">Transaction Success!!\n\nTap merchant device to get receipt\nPress Finish to finish transaction without receiving transaction receipt</string>
+    <string name="bAbsen">Absen</string>
+    <string name="tAbsenRandom">Random Number\t\t:</string>
+    <string name="bAbsenProceed">Proceed</string>
+    <string name="bAbsenCancel">Cancel</string>
 
 </resources>
