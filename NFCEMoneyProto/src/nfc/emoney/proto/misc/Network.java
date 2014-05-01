@@ -45,8 +45,8 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	private final static String TAG = "{class} Network";
 	private final static int REGISTRATION_MODE = 99;
 	private final static int LOG_SYNC_MODE = 49;
-	private final static String REG_SERVER = "http://emoney-server.herokuapp.com/register.json";
-	private final static String SYNC_SERVER = "http://emoney-server.herokuapp.com/sync.json";
+	private final static String REG_SERVER = "https://emoney-server.herokuapp.com/register.json";
+	private final static String SYNC_SERVER = "https://emoney-server.herokuapp.com/sync.json";
 			
 	private String hostname;
 	private String data,header,logs;

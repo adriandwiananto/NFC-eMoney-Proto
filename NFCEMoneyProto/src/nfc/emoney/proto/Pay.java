@@ -31,6 +31,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.os.Parcelable;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.inputmethod.InputMethodManager;
@@ -169,7 +170,10 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 					bPay.setEnabled(true);
 					tSESN.setVisibility(View.GONE);
 					tAmount.setVisibility(View.VISIBLE);
-					eAmount.setVisibility(View.VISIBLE);
+					//eAmount.setVisibility(View.VISIBLE);
+					//rev1:amount sent within merchant request, user only need to confirm it
+					tAmount.setGravity(Gravity.CENTER);
+					tAmount.setText("Payment Amount Requested:\n"+Converter.longToRupiah(Converter.byteArrayToLong(prp.getReceivedAMNT())));
 					
 				} else if(sequence == 2) {
 	    	        if(processReceipt() == false){
@@ -256,23 +260,32 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		switch(v.getId()){
 			case R.id.bPaySend:
 				//make sure amount is not 0
-				if(eAmount.getText().toString().length() > 0) {
+				//if(eAmount.getText().toString().length() > 0) {
+				//rev1:amount sent within merchant request, user only need to confirm it
+				if(eAmount.getText().toString().length() > 0 || (merchantDevice == 1)) {
 
 					//if merchant device is NFC reader, then SESN edit text must have 3 digit numbers
 					//if merchant device is NFC phone, ignore SESN edit text field
 					if((eSESN.getText().toString().length() == 3) || (merchantDevice == 1)) {
 						
 						//hide soft keyboard
-						InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
-						inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
+						//InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
+						//inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
 					    
+						//rev1:amount sent within merchant request, user only need to confirm it
+						//transaction to nfc smartphone doesn't have any edit text, hence getCurrentFocus() will be null
+						if(merchantDevice == 0){
+							InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
+							inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
+						}
+						
 						//nfcAdapter = NfcAdapter.getDefaultAdapter(this);
 						//mNfcPendingIntent = PendingIntent.getActivity(this, 0, new Intent(Pay.this, Pay.class).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP), 0);
 						
 						//get amount from edit text
 						//get accn and last transaction timestamp from appdata
-						String amount = eAmount.getText().toString();
-						amountInt = Integer.parseInt(amount);
+						//String amount = eAmount.getText().toString();
+						//amountInt = Integer.parseInt(amount);
 						long accnLong = appdata.getACCN();
 						long lastTS = appdata.getLastTransTS();
 						
@@ -288,6 +301,12 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							//get SESN from edit text
 							String SESN = eSESN.getText().toString();
 							int sesnInt = Integer.parseInt(SESN);
+							
+							//get amount from edit text
+							//get accn and last transaction timestamp from appdata
+							//rev1:amount sent within merchant request, user only need to confirm it
+							String amount = eAmount.getText().toString();
+							amountInt = Integer.parseInt(amount);
 							
 							//build transaction data packet 
 							//create NDEF message consist of mime type "emoney/newPayment" and transaction data packet
@@ -326,8 +345,12 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							//build transaction data packet
 							//Use SESN and timestamp from merchant request
 							//create NDEF message consist of mime type "emoney/newPayment" and transaction data packet
-							Packet packet = new Packet(amountInt, Converter.byteArrayToInteger(prp.getReceivedSESN()), 
-									Converter.byteArrayToInteger(prp.getReceivedTS()), accnLong, lastTS, aes_key);
+							//Packet packet = new Packet(amountInt, Converter.byteArrayToInteger(prp.getReceivedSESN()), 
+							//		Converter.byteArrayToInteger(prp.getReceivedTS()), accnLong, lastTS, aes_key);
+							//rev1:amount sent within merchant request, user only need to confirm it
+							amountInt = Converter.byteArrayToInteger(prp.getReceivedAMNT());
+							Packet packet = new Packet(Converter.byteArrayToInteger(prp.getReceivedAMNT()), Converter.byteArrayToInteger(prp.getReceivedSESN()), 
+											Converter.byteArrayToInteger(prp.getReceivedTS()), accnLong, lastTS, aes_key);
 							byte[] packetArrayToSend = packet.buildTransPacket();
 							toSend = packet.createNDEFMessage("emoney/newPayment", packetArrayToSend);
 
@@ -352,9 +375,9 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							
 							//UI purpose
 							bPay.setEnabled(false);			
-							//tAmount.append(" "+amount);
-							tAmount.append(" "+Converter.longToRupiah(amountInt));
-							eAmount.setVisibility(View.GONE);
+							//rev1:amount sent within merchant request, user only need to confirm it
+							//tAmount.append(" "+Converter.longToRupiah(amountInt));
+							//eAmount.setVisibility(View.GONE);
 						} else { //proceedTrans == false
 							Toast.makeText(this, "Insufficient balance!", Toast.LENGTH_LONG).show();
 						}
