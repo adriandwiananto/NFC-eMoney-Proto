@@ -56,12 +56,18 @@ public class KeyDerive {
 		String salt = IMEI;
 		Log.d(TAG,"Start deriving key");
 		balance_key = pbkdf2Derive(password, salt, 800);
+//		balance_key = pbkdf2Derive(password, salt, 400); //testing purpose
+//		balance_key = pbkdf2Derive(password, salt, 1600); //testing purpose
 		Log.d(TAG,"balancekey:"+Converter.byteArrayToHexString(balance_key));
 		
 		log_key = pbkdf2Derive(password, salt, 900);
+//		log_key = pbkdf2Derive(password, salt, 450); //testing purpose
+//		log_key = pbkdf2Derive(password, salt, 1800); //testing purpose
 		Log.d(TAG,"logkey:"+Converter.byteArrayToHexString(log_key));
 		
 		keyEncryption_key = pbkdf2Derive(password, salt, 1000);
+//		keyEncryption_key = pbkdf2Derive(password, salt, 500); //testing purpose
+//		keyEncryption_key = pbkdf2Derive(password, salt, 2000); //testing purpose
 		Log.d(TAG,"transkey:"+Converter.byteArrayToHexString(keyEncryption_key));
 		Log.d(TAG,"Finish deriving key. Check the time!");
 	}

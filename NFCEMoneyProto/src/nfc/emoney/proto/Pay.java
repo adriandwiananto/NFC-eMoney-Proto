@@ -68,6 +68,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	
 	private String passExtra;
 	
+	private long startTrans, stopTrans;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -174,6 +176,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 					//rev1:amount sent within merchant request, user only need to confirm it
 					tAmount.setGravity(Gravity.CENTER);
 					tAmount.setText("Payment Amount Requested:\n"+Converter.longToRupiah(Converter.byteArrayToLong(prp.getReceivedAMNT())));
+					tAmount.setTextSize(25);
 					
 				} else if(sequence == 2) {
 	    	        if(processReceipt() == false){
@@ -201,11 +204,14 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
     	if ((merchantDevice == 0) && (sequence == 0) && mWriteMode && 
     			NfcAdapter.ACTION_TAG_DISCOVERED.equals(intent.getAction())) {
         	Log.d(TAG,"tag discovered");
+        	startTrans = System.currentTimeMillis();
     		
 			// if merchant device is NFC reader, and write mode is enabled, and new NFC TAG is discovered
 	    	Tag detectedTag = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
 	    	
 	    	if(writeTag(toSend, detectedTag)) {
+	    		stopTrans = System.currentTimeMillis();
+	    		Log.d(TAG,"[testing]trans time = " + (stopTrans - startTrans) + " ms");
 		    	//write NDEF message toSend to NFC TAG
 	        	sequence = 1;
 	        	
@@ -222,11 +228,11 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	        	appdata.setLastTransTS(System.currentTimeMillis() / 1000);
 	        	
 	        	//UI purpose
-				bPay.setEnabled(true);
-				tAmount.setText(this.getString(R.string.tPayAmount));
-				tSESN.setText(this.getString(R.string.tPaySESN));
-				eAmount.setVisibility(View.VISIBLE);
-				eSESN.setVisibility(View.VISIBLE);
+				//bPay.setEnabled(true);
+				//tAmount.setText(this.getString(R.string.tPayAmount));
+				//tSESN.setText(this.getString(R.string.tPaySESN));
+				//eAmount.setVisibility(View.VISIBLE);
+				//eSESN.setVisibility(View.VISIBLE);
 				Toast.makeText(getApplicationContext(), "Transaction Success!", Toast.LENGTH_LONG).show();
 				
 				//close pay activity and open main activity
@@ -239,6 +245,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		    	eSESN.setVisibility(View.GONE);
 		    	bPay.setVisibility(View.GONE);
 		    	tReceipt.setVisibility(View.VISIBLE);
+		    	tReceipt.setTextSize(25);
 		    	bCancel.setText("Finish");
 	    	}
 	    } else if ((merchantDevice == 0) && (sequence == 1) && 
@@ -339,7 +346,9 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 							eSESN.setVisibility(View.GONE);
 							//tAmount.append(" "+amount);
 							tAmount.append(" "+Converter.longToRupiah(amountInt));
+							tAmount.setTextSize(25);
 							tSESN.append(" "+SESN);
+							tSESN.setTextSize(25);
 						} else if((merchantDevice == 1) && (proceedTrans == true)) {
 
 							//build transaction data packet
@@ -398,7 +407,9 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						bPay.setEnabled(true);
 						tDebug.setVisibility(View.GONE);
 						tAmount.setText(this.getString(R.string.tPayAmount));
+						tAmount.setTextSize(new Button(this).getTextSize()); // return to default text size
 						tSESN.setText(this.getString(R.string.tPaySESN));
+						tSESN.setTextSize(new Button(this).getTextSize()); // return to default text size
 						eAmount.setVisibility(View.VISIBLE);
 						eSESN.setVisibility(View.VISIBLE);
 						disableTagWriteMode();
@@ -424,6 +435,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						eAmount.setVisibility(View.GONE);
 						tAmount.setVisibility(View.GONE);
 						tAmount.setText(this.getString(R.string.tPayAmount));
+						tAmount.setTextSize(new Button(this).getTextSize());
 						bPay.setEnabled(false);
 						sequence = 0;
 					}
@@ -540,6 +552,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 			    	eAmount.setVisibility(View.GONE);
 			    	bPay.setVisibility(View.GONE);
 			    	tReceipt.setVisibility(View.VISIBLE);
+			    	tReceipt.setTextSize(25);
 			    	bCancel.setText("Finish");
 					break;
 			}

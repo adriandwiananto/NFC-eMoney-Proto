@@ -42,6 +42,8 @@ public class MainActivity extends Activity implements OnClickListener{
 	private KeyDerive key;
 	private byte[] aes_key, keyEncryption_key, log_key, balance_key;
 	
+	private long startDerive, stopDerive;
+	
 	String[] merchantDevice =new String[] {"NFC Reader", "NFC Smartphone"};
 	int selectedItem=0;
 	
@@ -49,6 +51,8 @@ public class MainActivity extends Activity implements OnClickListener{
 	Handler handler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
+			stopDerive = System.currentTimeMillis();
+			Log.d(TAG,"[testing]derive key time: " + (stopDerive-startDerive) + " ms");
 			//bellow code will be executed after derive key thread finish
 			Bundle bundle = msg.getData();
 			int balanceFromMsg = bundle.getInt("Balance", 0);
@@ -178,6 +182,7 @@ public class MainActivity extends Activity implements OnClickListener{
 	        		}
 	        	};
 	        	Thread balanceThread = new Thread(runnable);
+	        	startDerive = System.currentTimeMillis(); // derive key start breakpoint
 	        	balanceThread.start();
         	}
         }

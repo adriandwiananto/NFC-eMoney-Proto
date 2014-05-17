@@ -65,6 +65,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	
 	private byte[] keyEncryption_key, log_key, balance_key;
 	
+	private long startSync, stopSync;
 	/**
 	 * USE THIS CONSTRUCTOR TO SEND HTTP POST REGISTRATION DATA
 	 * @param parent parent activity
@@ -240,6 +241,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	@Override
 	protected void onPreExecute() {
 		//Toast this message before doInBackground starts
+		startSync = System.currentTimeMillis();
 		if(param_mode == REGISTRATION_MODE){
 			Toast.makeText(ctx, "Registration Starts", Toast.LENGTH_SHORT).show();	
 		} else {
@@ -249,6 +251,9 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 	 
 	@Override
 	protected void onPostExecute(JSONObject result) {
+		stopSync = System.currentTimeMillis();
+		Log.d(TAG,"[testing]sync time = " + (stopSync - startSync) + " ms");
+		
 		//this method will be called after doInBackground finished
 		int returnBalance = 0;
 		int returnTS = 0;
