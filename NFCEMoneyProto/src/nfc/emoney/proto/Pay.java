@@ -70,6 +70,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 	
 	private long startTrans, stopTrans;
 	
+//	private float originalSize;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -108,6 +110,8 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 		tAmount = (TextView)findViewById(R.id.tPayAmount);
 		tSESN = (TextView)findViewById(R.id.tPaySESN);
 		tReceipt = (TextView)findViewById(R.id.tPayWaitReceipt);
+
+//		originalSize = tAmount.getTextSize();
 		
 		if(merchantDevice == 1){
 			//UI init for NFC phone merchant device
@@ -407,9 +411,9 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						bPay.setEnabled(true);
 						tDebug.setVisibility(View.GONE);
 						tAmount.setText(this.getString(R.string.tPayAmount));
-						tAmount.setTextSize(new Button(this).getTextSize()); // return to default text size
+						tAmount.setTextSize(14); // return to default text size
 						tSESN.setText(this.getString(R.string.tPaySESN));
-						tSESN.setTextSize(new Button(this).getTextSize()); // return to default text size
+						tSESN.setTextSize(14); // return to default text size
 						eAmount.setVisibility(View.VISIBLE);
 						eSESN.setVisibility(View.VISIBLE);
 						disableTagWriteMode();
@@ -435,7 +439,7 @@ public class Pay extends Activity implements OnClickListener , OnNdefPushComplet
 						eAmount.setVisibility(View.GONE);
 						tAmount.setVisibility(View.GONE);
 						tAmount.setText(this.getString(R.string.tPayAmount));
-						tAmount.setTextSize(new Button(this).getTextSize());
+						tAmount.setTextSize(14);
 						bPay.setEnabled(false);
 						sequence = 0;
 					}

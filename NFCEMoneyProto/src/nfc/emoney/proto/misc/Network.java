@@ -388,7 +388,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 					Log.d(TAG,"new key:"+returnNewKey);
 				}
 				//if sync success, delete all entries in log database
-				LogDB.deleteDB(ctx);
+				LogDB.deleteDB(ctx); //commented for testing
 				Toast.makeText(ctx, "Sync success", Toast.LENGTH_LONG).show();
 			} else {
 				Toast.makeText(ctx, "Sync failed", Toast.LENGTH_LONG).show();
