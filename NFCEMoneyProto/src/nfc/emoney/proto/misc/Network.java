@@ -305,6 +305,10 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 						appdata.setLATS(returnTS);
 						appdata.setBalance(returnBalance, balance_key);
 						appdata.setVerifiedBalance(returnBalance, balance_key);
+						
+						appdata.setParkingSecurity(0);
+						appdata.setParkingStatus(false);
+						appdata.setLicense("no license");
 						Log.d(TAG,"Finish writing shared pref");
 						
 						Toast.makeText(ctx, "Registration Success", Toast.LENGTH_LONG).show();
@@ -406,6 +410,7 @@ public class Network extends AsyncTask<Void, Void, JSONObject> {
 			(parentActivity.findViewById(R.id.bSync)).setEnabled(true);
 			(parentActivity.findViewById(R.id.bOption)).setEnabled(true);
 			(parentActivity.findViewById(R.id.bAbsen)).setEnabled(true);
+			(parentActivity.findViewById(R.id.bParkir)).setEnabled(true);
 		}
 	}
 }

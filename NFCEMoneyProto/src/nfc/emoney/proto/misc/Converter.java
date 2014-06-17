@@ -1,5 +1,6 @@
 package nfc.emoney.proto.misc;
 
+import android.annotation.SuppressLint;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.sql.Date;
@@ -122,4 +123,16 @@ public class Converter {
 		SimpleDateFormat df = new SimpleDateFormat("MMddyyyyHHmmss", Locale.US);
 		return df.format(d);
 	}
+	
+	/**
+	 * Convert string to hex representation
+	 * <br>example: a123bc
+	 * @param arg String to convert
+	 * @return converted string
+	 */
+	@SuppressLint("DefaultLocale")
+	public static String strToHexRepresent(String arg) {
+		String newArg = arg.toUpperCase();
+        return String.format("%x", new BigInteger(1, newArg.getBytes(/*YOUR_CHARSET?*/)));
+    }
 }

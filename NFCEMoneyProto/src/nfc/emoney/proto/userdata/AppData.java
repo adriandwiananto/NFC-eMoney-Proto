@@ -49,9 +49,21 @@ public class AppData {
 			if(v instanceof Boolean){ 
 				// Also note that i have to cast the object to a Boolean 
 				// and then use .booleanValue to get the boolean
-			    if(Pref.getBoolean(key, false) != Pref1.getBoolean(key, false) != Pref2.getBoolean(key, false))
-			    	return 1;
-
+				boolean pref = Pref.getBoolean(key, false);
+				boolean pref1 = Pref1.getBoolean(key, false);
+				boolean pref2 = Pref2.getBoolean(key, false);
+//			    if(Pref.getBoolean(key, false) != Pref1.getBoolean(key, false) != Pref2.getBoolean(key, false))
+//			    	return 1;
+				
+				if(Boolean.compare(pref, pref1) != 0){
+					return 1;
+				}
+				if(Boolean.compare(pref, pref2) != 0){
+					return 1;
+				}
+				if(Boolean.compare(pref1, pref2) != 0){
+					return 1;
+				}
 			    Log.d(TAG,"(bool)Key: "+key+" Value: "+Pref.getBoolean(key, false));
 			} else if(v instanceof Float) {
 				float pref = Pref.getFloat(key, (float) 0.0);
@@ -231,7 +243,43 @@ public class AppData {
 	public long getLastTransTS(){
 		return Pref.getLong("LastTransTS", 0);
 	}
+	
+	public void setLicense(String PlateNum) {
+		// TODO Auto-generated method stub
+		Editor edit = Pref.edit();
+		edit.putString("License", PlateNum);
+		edit.commit();
+		saveDuplicate();
+	}
+	
+	public String getLicense(){
+		return Pref.getString("License", "no license");
+	}
+	
+	public void setParkingStatus(boolean status) {
+		// TODO Auto-generated method stub
+		Editor edit = Pref.edit();
+		edit.putBoolean("Parking status", status);
+		edit.commit();
+		saveDuplicate();
+	}
+	
+	public boolean getParkingStatus(){
+		return Pref.getBoolean("Parking status", false);
+	}
 
+	public void setParkingSecurity(int security) {
+		// TODO Auto-generated method stub
+		Editor edit = Pref.edit();
+		edit.putInt("Parking security", security);
+		edit.commit();
+		saveDuplicate();
+	}
+	
+	public int getParkingSecurity(){
+		return Pref.getInt("Parking security", 0);
+	}
+	
 	public void setBalance(int Balance, byte[] balance_key) {
 		// TODO Auto-generated method stub
 		

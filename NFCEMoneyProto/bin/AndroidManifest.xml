@@ -65,7 +65,18 @@
 			android:configChanges="keyboardHidden|orientation|screenSize"
 			android:windowSoftInputMode="stateHidden">
         </activity>
-        <activity android:name="Absen" android:screenOrientation="portrait" android:configChanges="keyboardHidden|orientation|screenSize" android:windowSoftInputMode="stateHidden"></activity>
+        <activity 
+            android:name="Absen" 
+            android:screenOrientation="portrait" 
+            android:configChanges="keyboardHidden|orientation|screenSize" 
+            android:windowSoftInputMode="stateHidden">
+        </activity>
+        <activity 
+            android:name="Parkir"
+            android:screenOrientation="portrait" 
+            android:configChanges="keyboardHidden|orientation|screenSize" 
+            android:windowSoftInputMode="stateHidden">
+        </activity>
     </application>
 
 </manifest>

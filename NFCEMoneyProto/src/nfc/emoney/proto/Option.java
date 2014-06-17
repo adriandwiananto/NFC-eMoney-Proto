@@ -24,9 +24,9 @@ import android.widget.Toast;
 public class Option extends Activity implements OnClickListener{
 
 	private byte[] aes_key, log_key, balance_key;
-	private String curPassStr, newPassStr, confPassStr;
+	private String curPassStr, newPassStr, confPassStr, licenseStr;
 	private Activity currentActivity;
-	EditText curPass, newPass, confPass;
+	EditText curPass, newPass, confPass, license;
 	Button proceed, cancel;
 	ProgressBar pOption;
 	AppData appdata;
@@ -57,10 +57,19 @@ public class Option extends Activity implements OnClickListener{
 		proceed.setOnClickListener(this);
 		cancel = (Button)findViewById(R.id.bOptionCancel);
 		cancel.setOnClickListener(this);
+		license = (EditText)findViewById(R.id.eOptionLicense);
 		curPass = (EditText)findViewById(R.id.eOptionCurPass);
 		newPass = (EditText)findViewById(R.id.eOptionNewPass);
 		confPass = (EditText)findViewById(R.id.eOptionConfPass);
 		pOption = (ProgressBar)findViewById(R.id.pOption);
+		
+		if(appdata.getLicense().equalsIgnoreCase("no license") == false){
+			license.setText(appdata.getLicense());
+		}
+		
+		if(appdata.getParkingStatus() == true){
+			license.setEnabled(false);
+		}
 	}
 
 	@Override
@@ -71,11 +80,18 @@ public class Option extends Activity implements OnClickListener{
 				//hide soft keyboard
 				InputMethodManager inputManager = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE); 
 				inputManager.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(),InputMethodManager.HIDE_NOT_ALWAYS);
-				
+					
 				//get string from edit text
 				curPassStr = curPass.getText().toString();
 				newPassStr = newPass.getText().toString();
 				confPassStr = confPass.getText().toString();
+				licenseStr = license.getText().toString();
+				
+				//save license first
+				if((licenseStr.length() > 1) && (licenseStr != appdata.getLicense())){
+					appdata.setLicense(licenseStr);
+					Toast.makeText(getApplicationContext(), "License Number saved", Toast.LENGTH_SHORT).show();
+				}
 				
 				//make sure new password is not empty
 				if(newPassStr.length() < 1){

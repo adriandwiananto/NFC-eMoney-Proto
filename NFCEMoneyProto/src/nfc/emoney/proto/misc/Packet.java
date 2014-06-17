@@ -192,6 +192,7 @@ public class Packet {
 		private byte[] receivedIV = new byte[16];
 		
 		private byte[] receivedPlainPacket = new byte[55]; 
+		private byte[] receivedPlainPayload = new byte[32]; 
 
 		private int errorCode = 0;
 		private String[] errorMsg = {"","received packet length is not 55","decrypt function throw exception","decrypt ok, but result is wrong!"};
@@ -236,6 +237,8 @@ public class Packet {
 					if(Arrays.equals(receivedSesnHeader, receivedSesnPayload) == false){
 						errorCode = 3;
 					}
+					
+					receivedPlainPayload = decryptedPayload;
 					
 					System.arraycopy(receivedPacket, 0, receivedPlainPacket, 0, 7);
 					System.arraycopy(decryptedPayload, 0, receivedPlainPacket, 7, decryptedPayload.length);
@@ -347,6 +350,14 @@ public class Packet {
 		 */
 		public byte[] getReceivedPlainPacket(){
 			return receivedPlainPacket;
+		}
+
+		/**
+		 * get received payload in plain form
+		 * @return plain payload
+		 */
+		public byte[] getReceivedPlainPayload(){
+			return receivedPlainPayload;
 		}
 	}
 }

@@ -13,6 +13,7 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.nfc.NfcAdapter;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,7 +37,7 @@ public class MainActivity extends Activity implements OnClickListener{
 	private AppData appdata;
 	TextView balance,balanceVerified,debug;
 	ProgressBar balanceLoading;
-	Button bPay,bHistory,bSync,bOption,bAbsen;
+	Button bPay,bHistory,bSync,bOption,bAbsen, bParkir;
 	private String password;
 	private long lIMEI;
 	private KeyDerive key;
@@ -69,6 +70,7 @@ public class MainActivity extends Activity implements OnClickListener{
 			bSync.setEnabled(true);
 			bOption.setEnabled(true);
 			bAbsen.setEnabled(true);
+			bParkir.setEnabled(true);
 			
 			debug.setText("KEK:\n"+Converter.byteArrayToHexString(key.getKeyEncryptionKey()));
 			debug.append("\nBalance Key:\n"+Converter.byteArrayToHexString(key.getBalanceKey()));
@@ -115,6 +117,9 @@ public class MainActivity extends Activity implements OnClickListener{
         bAbsen = (Button) findViewById(R.id.bAbsen);
         bAbsen.setOnClickListener(this);
         bAbsen.setEnabled(false);
+        bParkir = (Button) findViewById(R.id.bParkir);
+        bParkir.setOnClickListener(this);
+        bParkir.setEnabled(false);
         
         if(debugTextViewVisibility) {
         	debug.setVisibility(View.VISIBLE);
@@ -160,6 +165,11 @@ public class MainActivity extends Activity implements OnClickListener{
 	        	password = myIntent.getStringExtra("Password");
 	        	Log.d(TAG,"Password:"+password);
 	        	
+	            if(appdata.getParkingStatus() == true){
+	            	bParkir.append("(Parked)");
+	            	bParkir.setTextColor(Color.BLUE);
+	            }
+	            
 	        	//derive balance key, log key, and key encryption key in separate thread
 	        	//get decrypted balance
     			key = new KeyDerive();
@@ -253,6 +263,7 @@ public class MainActivity extends Activity implements OnClickListener{
 				bSync.setEnabled(false);
 				bOption.setEnabled(false);
 				bAbsen.setEnabled(false);
+				bParkir.setEnabled(false);
 				
 				//do sync in separate thread
 				Network sync = new Network(MainActivity.this, getApplicationContext(), keyEncryption_key, log_key, balance_key);
@@ -273,6 +284,13 @@ public class MainActivity extends Activity implements OnClickListener{
 				Intent absenIntent = new Intent(this, Absen.class);
 				absenIntent.putExtra("Password", password);
 				startActivity(absenIntent);
+				finish();
+				break;
+			case R.id.bParkir:
+				Intent parkirIntent = new Intent(this, Parkir.class);
+				parkirIntent.putExtra("Password", password);
+				parkirIntent.putExtra("aesKey", aes_key);
+				startActivity(parkirIntent);
 				finish();
 				break;
 		}

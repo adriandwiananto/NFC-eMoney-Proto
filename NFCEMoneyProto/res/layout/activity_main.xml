@@ -87,6 +87,13 @@
         android:layout_height="wrap_content"
         android:paddingTop="@dimen/top_margin_between_row_in_activity"
         android:text="@string/bAbsen" />
+
+    <Button
+        android:id="@+id/bParkir"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="@dimen/top_margin_between_row_in_activity"
+        android:text="@string/bParkir" />
     
     <TextView
         android:id="@+id/tMainDebug"

@@ -35,5 +35,8 @@
     <string name="tAbsenRandom">Random Number\t\t:</string>
     <string name="bAbsenProceed">Proceed</string>
     <string name="bAbsenCancel">Cancel</string>
+    <string name="bParkir">Parkir</string>
+    <string name="tParkir">Please tap parking meter</string>
+    <string name="tOptionLicense">License Number\t\t\t:</string>
 
 </resources>
